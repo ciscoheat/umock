@@ -2,6 +2,7 @@ package mockingbird;
 
 import haxe.rtti.Infos;
 import haxe.rtti.CType;
+import neko.Lib;
 
 import haxe.macro.Expr;
 import haxe.macro.Context;
@@ -42,11 +43,43 @@ class The
 				field = f;
 				
 			default:
-				field = "?";
+				return e;
 		}
 		
 		return { expr: EConst(CString(field)), pos: Context.currentPos() };
-	}	
+	}
+	
+	@:macro public static function method(e : Expr)
+	{
+		var field : String = null;
+		
+		toString(e);
+		
+		// src/mockingbird/Mock.hx:70: EFunction({ expr => { expr => EBlock([{ expr => EReturn({ expr => EConst(CString(MOCK)), pos => #pos(test/Main.hx:31: characters 44-50) }), pos => #pos(test/Main.hx:31: characters 37-50) }]), pos => #pos(test/Main.hx:31: characters 35-53) }, args => [], ret => null })
+		
+		switch(e.expr)
+		{
+			case EField(e, f):
+				// Return an anonymous method that returns the fieldname as value.
+				return { expr: EFunction( {expr: { expr: EReturn( { expr: EConst(CString(f)), pos : Context.currentPos() } ), pos : Context.currentPos() }, args: [], ret: null } ), pos: Context.currentPos() };
+				
+			default:
+				return e;
+		}
+	}
+	
+	public static function toString(e : Expr)
+	{
+		trace(e.expr);
+		
+		var o = Std.string(e.expr);
+		var posReplace = ~/#pos.*?characters [0-9]+-[0-9+]./g;
+		o = posReplace.replace(o, "Context.currentPos()");
+		
+		o = StringTools.replace(o, "=>", ":");
+		
+		Lib.println(o);
+	}
 }
 
 class Times
@@ -70,6 +103,16 @@ class Times
 	public static function Never()
 	{
 		return new Times(0);
+	}
+
+	public static function AtLeastOnce()
+	{
+		return new Times(1, false, true);
+	}
+
+	public static function AtMostOnce()
+	{
+		return new Times(1, true, false);
 	}
 
 	public static function AtLeast(calls : Int)
@@ -130,9 +173,11 @@ class Mock<T>
 		return cast mockObject;
 	}
 	
-	public function setup(field : String) : MockSetupContext<T>
+	public function setup(field : Dynamic) : MockSetupContext<T>
 	{
-		return new MockSetupContext<T>(this, field);
+		var fieldName = Reflect.isFunction(field) ? field() : field;
+		
+		return new MockSetupContext<T>(this, fieldName);
 	}
 	
 	public function verify(field : String, ?times : Times)
@@ -171,33 +216,37 @@ class Mock<T>
 private class MockSetupContext<T>
 {
 	private var mock : Mock<T>;
-	private var field : String;
+	private var fieldName : Dynamic;
 	
-	public function new(mock : Mock<T>, field : String)
+	public function new(mock : Mock<T>, fieldName : String)
 	{
 		this.mock = mock;
-		this.field = field;
+		this.fieldName = fieldName;
+		
+		trace("MockContext: " + fieldName);
 	}
 	
 	public function returns(value : Dynamic) : MockSetupContext<T>
 	{
-		if (Reflect.isFunction(Reflect.field(mock.object, field)))
+		var field = Reflect.field(mock.object, fieldName);
+		var fieldName = this.fieldName;
+		
+		if (Reflect.isFunction(field))
 		{
-			//trace("SetupContext: " + field + " is func");
+			//trace("SetupContext: " + field + " is func, returns field " + fieldName);
 			
-			var self = this;
 			var p : { private function addCallCount(field : String) : Void; } = mock;
 			
 			var returnFunction = Reflect.makeVarArgs(function(args : Array<Dynamic>) {
-				p.addCallCount(self.field);
+				p.addCallCount(fieldName);
 				return value;
 			});		
 			
-			Reflect.setField(mock.object, field, returnFunction);
+			Reflect.setField(mock.object, fieldName, returnFunction);
 		}
 		else
 		{
-			Reflect.setField(mock.object, field, value);
+			Reflect.setField(mock.object, fieldName, value);
 		}
 			
 		return this;
@@ -205,7 +254,7 @@ private class MockSetupContext<T>
 	
 	public function throws(value : Dynamic)
 	{
-		Reflect.setField(mock.object, field, throw value);
+		Reflect.setField(mock.object, fieldName, throw value);
 		return this;
 	}
 	
