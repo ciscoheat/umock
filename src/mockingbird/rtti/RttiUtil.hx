@@ -1,4 +1,4 @@
-package mockingbird;
+package mockingbird.rtti;
 
 import haxe.rtti.CType;
 

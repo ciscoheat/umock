@@ -30,6 +30,8 @@ class Main
 		mock.setup(The.field(mock.object.lengthSquared)).returns(Date.now()).callBack(function() { i++; } );
 		
 		test(mock.object);
+		
+		mock.verify("length", Times.AtLeast(4));
 	}
 	
 	static function test(p : PointProto)

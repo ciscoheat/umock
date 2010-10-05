@@ -6,6 +6,8 @@ import haxe.rtti.CType;
 import haxe.macro.Expr;
 import haxe.macro.Context;
 
+import mockingbird.rtti.RttiUtil;
+
 /**
  * ...
  * @author Andreas Soderlund
@@ -65,7 +67,27 @@ class Times
 		return new Times(1);
 	}
 	
-	public function isValid(callCount : Int, ?max : Bool, ?min : Bool)
+	public static function Never()
+	{
+		return new Times(0);
+	}
+
+	public static function AtLeast(calls : Int)
+	{
+		return new Times(calls, false, true);
+	}
+
+	public static function AtMost(calls : Int)
+	{
+		return new Times(calls, true, false);
+	}
+
+	public static function Exactly(calls : Int)
+	{
+		return new Times(calls, false, false);
+	}
+
+	public function isValid(callCount : Int)
 	{
 		if (max == true)
 			return callCount <= count;
@@ -74,6 +96,17 @@ class Times
 			return callCount >= count;
 			
 		return callCount == count;
+	}
+	
+	public function toString()
+	{
+		if (max == true)
+			return "at most " + count + " call" + (count == 1 ? "" : "s");
+			
+		if (min == true)
+			return "at least " + count + " call" + (count == 1 ? "" : "s");
+			
+		return "exactly " + count + " call" + (count == 1 ? "" : "s");
 	}
 }
  
@@ -104,7 +137,13 @@ class Mock<T>
 	
 	public function verify(field : String, ?times : Times)
 	{
-		// TODO
+		if (times == null)
+			times = new Times(1, false, true);
+		
+		var count = funcCalls.exists(field) ? funcCalls.get(field) : 0;
+		
+		if (!times.isValid(count))
+			throw new MockException("Mock verification failed: Expected " + times + " to function " + field + ", but was " + count + " call"  + (count == 1 ? "" : "s") + ".");
 	}
 	
 	private function watchFunctions()
