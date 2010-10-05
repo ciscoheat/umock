@@ -10,8 +10,9 @@ import haxe.macro.Context;
 import mockingbird.rtti.RttiUtil;
 
 /**
- * ...
+ * Gives typesafe information about fields and methods that can be used in Mock.setup()
  * @author Andreas Soderlund
+ * @example mock.setup(The.field(mock.object.a)).returns(123);
  */
 class The
 {
@@ -20,9 +21,11 @@ class The
 		switch(e.expr)
 		{
 			case EField(e, f):
+				// Return a string to notify Mock.setup() that it's a field.
 				return { expr: EConst(CString(f)), pos: Context.currentPos() };
 				
 			default:
+				// If no match, return itself to get intellisense.
 				return e;
 		}
 	}
@@ -32,15 +35,21 @@ class The
 		switch(e.expr)
 		{
 			case EField(e, f):
-				// Return an anonymous method that returns the fieldname as a string.
-				return { expr: EFunction( {expr: { expr: EReturn( { expr: EConst(CString(f)), pos : Context.currentPos() } ), pos : Context.currentPos() }, args: [], ret: null } ), pos: Context.currentPos() };
+				// To notify Mock.setup() that this is a method call,
+				// return an anonymous method that returns the fieldname as a string.
+				var cPos = Context.currentPos();
+				return { expr: EFunction( {expr: { expr: EReturn( { expr: EConst(CString(f)), pos : cPos } ), pos : cPos }, args: [], ret: null } ), pos: cPos };
 				
 			default:
+				// If no match, return itself to get intellisense.
 				return e;
 		}
 	}	
 }
 
+/**
+ * Verifies if a method has been called the correct number of times.
+ */
 class Times
 {
 	private var count : Int;
@@ -112,24 +121,37 @@ class Times
 	}
 }
  
+/**
+ * The mock object that handles all setup and verification.
+ */
 class Mock<T>
-{
-	private var type : Class<Dynamic>;	
-	
-	public function new(type : Class<Dynamic>)
-	{
-		this.type = type;
-		this.mockObject = Std.is(type, Infos) ? new MockObject(type) : Type.createEmptyInstance(type);
-		this.funcCalls = new Hash<Int>();
-	}
-	
+{	
+	public var funcCalls : Hash<Int>;
+
 	private var mockObject : Dynamic;
 	public var object(getObject, null) : T;
 	private function getObject() : T
 	{
 		return cast mockObject;
 	}
-	
+
+	/**
+	 * Instantiates a new mock object
+	 * @param	type Class/Interface type for the mock.
+	 * @example var mock = new Mock<IPoint>(IPoint);
+	 */
+	public function new(type : Class<Dynamic>)
+	{
+		this.mockObject = Std.is(type, Infos) ? new MockObject(type) : Type.createEmptyInstance(type);
+		this.funcCalls = new Hash<Int>();
+	}
+
+	/**
+	 * Setup a field (or method) so that it returns a specific value.
+	 * @param	field 'String' for setting up a field, 'Void -> String' to setup a method. The method should return the fieldname.
+	 * @return  A context object that will be used to define behavior.
+	 * @example mock.setup(The.method(mock.object.getDate)).returns(Date.now());
+	 */
 	public function setup(field : Dynamic) : MockSetupContext<T>
 	{
 		var fieldName : String;
@@ -148,19 +170,33 @@ class Mock<T>
 		return new MockSetupContext<T>(this, fieldName, isFunc);
 	}
 	
-	public function verify(methodName : String, ?times : Times)
+	/**
+	 * Verifies that a method has been called a specific number of times.
+	 * @param	methodName name of method
+	 * @param	?times Verification object. Use the static Times class to create constraints.
+	 * @example mock.verify(The.method(mock.object.getDate), Times.Once());
+	 * @throws  MockException if the verification fails.
+	 */
+	public function verify(field : Dynamic, ?times : Times)
 	{
-		if (times == null)
-			times = new Times(1, false, true);
+		var fieldName : String;
 		
-		var count = funcCalls.exists(methodName) ? funcCalls.get(methodName) : 0;
+		if (Reflect.isFunction(field))
+			fieldName = field();
+		else if(Std.is(field, String))
+			fieldName = field;
+		else
+			throw "Only 'String' or 'Void -> String' are allowed arguments for setup()";
+		
+		if (times == null)
+			times = Times.AtLeastOnce();
+		
+		var count = funcCalls.exists(fieldName) ? funcCalls.get(fieldName) : 0;
 		
 		if (!times.isValid(count))
-			throw new MockException("Mock verification failed: Expected " + times + " to function " + methodName + ", but was " + count + " call"  + (count == 1 ? "" : "s") + ".");
+			throw new MockException("Mock verification failed: Expected " + times + " to function " + fieldName + ", but was " + count + " call"  + (count == 1 ? "" : "s") + ".");
 	}
 	
-	public var funcCalls : Hash<Int>;
-
 	private function addCallCount(field : String) : Void
 	{
 		if (!funcCalls.exists(field))
@@ -183,6 +219,11 @@ private class MockSetupContext<T>
 		this.isFunc = isFunc;
 	}
 	
+	/**
+	 * Specifies what value a mocked field should return
+	 * @param	value Return value.
+	 * @return  The same context object for method chaining.
+	 */
 	public function returns(value : Dynamic) : MockSetupContext<T>
 	{
 		var fieldName = this.fieldName;
@@ -206,12 +247,21 @@ private class MockSetupContext<T>
 		return this;
 	}
 	
+	/**
+	 * Specifies that a field should throw an exception.
+	 * @param	value Exception to throw.
+	 */
 	public function throws(value : Dynamic)
 	{
 		Reflect.setField(mock.object, fieldName, throw value);
 		return this;
 	}
 	
+	/**
+	 * A callback method that is executed on field invocation.
+	 * @param	f A callback function
+	 * @return  The same context object for method chaining.
+	 */
 	public function callBack(f : Void -> Void) : MockSetupContext<T>
 	{
 		f();
