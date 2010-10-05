@@ -2,7 +2,12 @@ package umock;
 
 import haxe.rtti.Infos;
 import haxe.rtti.CType;
+
+#if neko
 import neko.Lib;
+#elseif php
+import php.Lib;
+#end
 
 import haxe.macro.Expr;
 import haxe.macro.Context;
@@ -142,22 +147,39 @@ class Mock<T>
 	 */
 	public function new(type : Class<Dynamic>)
 	{
-		var object = Type.createEmptyInstance(type);
+		var name = Type.getClassName(type);
+		var cls = Type.resolveClass(name);
+
+		if (cls == null)
+		{
+			//trace(name + " becomes a MockObject");
+			mockObject = new MockObject(type);
+		}
+		else
+		{
+			//trace(name + " becomes an EmptyInstance");
+			#if php
+			mockObject = new MockObject(type, Type.createEmptyInstance(cls));
+			#else
+			mockObject = Type.createEmptyInstance(cls);
+			#end
+		}
 		
-		// If an type implements rtti, test all fields on object. If all fields are null
-		// it's probably an interface so then we can create a MockObject to simulate all methods.
 		if (Reflect.field(type, "__rtti") != null)
 		{
+			// If an type implements rtti, test all fields on object. If all fields are null
+			// it's probably an interface so then we can create a MockObject to simulate all methods.
+			var object = this.mockObject;
 			var notNullFields = Lambda.filter(Type.getInstanceFields(type), function(field : String) { return Reflect.field(object, field) != null; } );
+			
 			if (notNullFields.length == 0)
 			{
 				//trace(Type.getClassName(type) + " becomes a MockObject");
-				object = new MockObject(type);
+				mockObject = new MockObject(type);
 			}
 		}
-		
-		this.mockObject = object;
-		this.funcCalls = new Hash<Int>();		
+				
+		funcCalls = new Hash<Int>();
 	}
 
 	/**
@@ -232,7 +254,9 @@ private class MockSetupContext<T>
 		this.mock = mock;
 		this.fieldName = fieldName;
 		this.isFunc = isFunc;
-		this.callBacks = new Array<Void -> Void>();
+		this.callBacks = new Array < Void -> Void > ();
+		
+		//trace("Context: " + fieldName + "(" + isFunc + ")");
 	}
 	
 	/**
@@ -247,9 +271,12 @@ private class MockSetupContext<T>
 		
 		if (isFunc)
 		{
+			//trace("Function: " + fieldName + " on " + mock.object + " should return " + value);
+			
 			var p : { private function addCallCount(field : String) : Void; } = mock;
 			
 			var returnFunction = Reflect.makeVarArgs(function(args : Array<Dynamic>) {
+				//trace("addCallCount: " + fieldName);
 				p.addCallCount(fieldName);
 				for (f in calls) f();
 
@@ -297,21 +324,36 @@ private class MockSetupContext<T>
 
 private class MockObject implements Dynamic
 {
-	public function new(type : Class<Dynamic>)
+	public function new(type : Class<Dynamic>, ?realObject : Dynamic)
 	{
-		if (untyped type.__rtti == null)
-			throw "haxe.rtti.Infos must be implemented on " + Type.getClassName(type) + " to mock it.";
-		
-		for (field in RttiUtil.getFields(type))
+		if (realObject != null)
 		{
-			switch(field.type)
+			// A PHP workaround - Methods cannot be redefined on an object so a MockObject has to be created.
+			for (field in Type.getInstanceFields(Type.getClass(realObject)))
 			{
-				case CFunction(args, ret):
-					Reflect.setField(this, field.name, Reflect.makeVarArgs(function(a : Array<Dynamic>) {} ));
-					
-				default:
-					Reflect.setField(this, field.name, null);
+				Reflect.setField(this, field, Reflect.field(realObject, field));
 			}			
+		}
+		else if (untyped type.__rtti == null)
+		{
+			for (field in Type.getInstanceFields(type))
+			{
+				Reflect.setField(this, field, null);
+			}
+		}
+		else
+		{
+			for (field in RttiUtil.getFields(type))
+			{
+				switch(field.type)
+				{
+					case CFunction(args, ret):
+						Reflect.setField(this, field.name, Reflect.makeVarArgs(function(a : Array<Dynamic>) {} ));
+						
+					default:
+						Reflect.setField(this, field.name, null);
+				}			
+			}
 		}
 	}
 }

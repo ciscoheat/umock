@@ -12,5 +12,10 @@ class MockException
 	public function new(message : String)
 	{
 		this.message = message;
-	}	
+	}
+	
+	public function toString() : String
+	{
+		return message;
+	}
 }

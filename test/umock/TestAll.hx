@@ -71,7 +71,7 @@ class TestAll
 	
 	public function addTests(runner : Runner)
 	{
-		runner.addCase(new TestReturns());
+		//runner.addCase(new TestReturns());
 		runner.addCase(new TestVerify());
 		runner.addCase(new TestCallback());
 	}
