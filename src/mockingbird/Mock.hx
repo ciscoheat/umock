@@ -142,8 +142,8 @@ class Mock<T>
 	 */
 	public function new(type : Class<Dynamic>)
 	{
-		this.mockObject = Std.is(type, Infos) ? new MockObject(type) : Type.createEmptyInstance(type);
-		this.funcCalls = new Hash<Int>();
+		this.mockObject = Reflect.field(type, "__rtti") != null ? new MockObject(type) : Type.createEmptyInstance(type);
+		this.funcCalls = new Hash<Int>();		
 	}
 
 	/**

@@ -15,6 +15,7 @@
   <classpaths>
     <class path="src" />
     <class path="test" />
+    <class path="..\utest\src" />
   </classpaths>
   <!-- Build options -->
   <build>
