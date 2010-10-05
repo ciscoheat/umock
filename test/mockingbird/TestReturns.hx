@@ -5,51 +5,7 @@ import utest.Assert;
 
 import mockingbird.Mock;
 
-/**
- * ...
- * @author Andreas Soderlund
- */
-
-enum MyEnum {
-	First;
-	Second(s : String);
-}
- 
-interface ITest {
-	var x : Int;
-	var y(default, null) : Int;
-	function length() : Int;
-	function setDate(d : Date) : Int;
-	var isOk : Bool;
-	var e : MyEnum;
-}
-
-interface ITestInfos implements Infos {
-	var x : Int;
-	var y(default, null) : Int;
-	function length() : Int;
-	function setDate(d : Date) : Int;
-	var isOk : Bool;
-	var e : MyEnum;
-}
-
-class MockMe
-{
-	public var x : Int;
-	var d : Date;
-	
-	public function new() { }
-	
-	public function setDate(d : Date)
-	{
-		this.d = d;
-	}
-	
-	public function message()
-	{
-		return "message was called";
-	}
-}
+import mockingbird.TestAll;
 
 class TestReturns 
 {

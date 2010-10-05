@@ -24,7 +24,7 @@ class Main
 {
 	@:macro static function runTests()
 	{
-		return MacroRunner.run(new mockingbird.TestReturns());
+		return MacroRunner.run(new mockingbird.TestAll());
 	}
 
 	static function main() 
