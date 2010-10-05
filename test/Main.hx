@@ -34,9 +34,9 @@ class Main
 	
 	static function test(p : PointProto)
 	{
-		//trace(p.x);
-		//trace(p.y);
-		//trace(p.isOk);
+		trace(p.x);
+		trace(p.y);
+		trace(p.isOk);
 		
 		trace(p.lengthSquared(5, Date.now()));
 		

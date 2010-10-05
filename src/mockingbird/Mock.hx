@@ -46,18 +46,51 @@ class The
 		return { expr: EConst(CString(field)), pos: Context.currentPos() };
 	}	
 }
+
+class Times
+{
+	private var count : Int;
+	private var max : Bool;
+	private var min : Bool;
+	
+	public function new(count : Int, ?max : Bool, ?min : Bool)
+	{
+		this.count = count;
+		this.max = max;
+		this.min = min;
+	}
+	
+	public static function Once()
+	{
+		return new Times(1);
+	}
+	
+	public function isValid(callCount : Int, ?max : Bool, ?min : Bool)
+	{
+		if (max == true)
+			return callCount <= count;
+		
+		if (min == true)
+			return callCount >= count;
+			
+		return callCount == count;
+	}
+}
  
 class Mock<T>
 {
-	private var type : Class<Dynamic>;
+	private var type : Class<Dynamic>;	
 	
 	public function new(type : Class<Dynamic>)
 	{
 		this.type = type;
 		this.mockObject = new MockObject(type);
+		this.funcCalls = new Hash<Int>();
+		
+		watchFunctions();
 	}
 	
-	private var mockObject : MockObject;
+	private var mockObject : Dynamic;
 	public var object(getObject, null) : T;
 	private function getObject() : T
 	{
@@ -67,6 +100,32 @@ class Mock<T>
 	public function setup(field : String) : MockSetupContext<T>
 	{
 		return new MockSetupContext<T>(this, field);
+	}
+	
+	public function verify(field : String, ?times : Times)
+	{
+		// TODO
+	}
+	
+	private function watchFunctions()
+	{
+		for (field in Type.getInstanceFields(type))
+		{			
+			if (Reflect.isFunction(Reflect.field(mockObject, field)))
+			{
+				setup(field).returns(null);
+			}
+		}
+	}
+	
+	public var funcCalls : Hash<Int>;
+
+	private function addCallCount(field : String) : Void
+	{
+		if (!funcCalls.exists(field))
+			funcCalls.set(field, 1);
+		else
+			funcCalls.set(field, funcCalls.get(field) + 1);
 	}	
 }
 
@@ -84,9 +143,23 @@ private class MockSetupContext<T>
 	public function returns(value : Dynamic) : MockSetupContext<T>
 	{
 		if (Reflect.isFunction(Reflect.field(mock.object, field)))
-			Reflect.setField(mock.object, field, FunctionHelper.dynamicFunction(value));
+		{
+			//trace("SetupContext: " + field + " is func");
+			
+			var self = this;
+			var p : { private function addCallCount(field : String) : Void; } = mock;
+			
+			var returnFunction = Reflect.makeVarArgs(function(args : Array<Dynamic>) {
+				p.addCallCount(self.field);
+				return value;
+			});		
+			
+			Reflect.setField(mock.object, field, returnFunction);
+		}
 		else
+		{
 			Reflect.setField(mock.object, field, value);
+		}
 			
 		return this;
 	}
@@ -120,61 +193,18 @@ private class MockObject implements Dynamic
 			{
 				case CClass(name, params):
 					//trace(field.name);
-					Reflect.setField(this, field.name, FunctionHelper.defaultClassValueFor(name));
+					Reflect.setField(this, field.name, null);
 					
 				case CEnum(name, params):
 					//trace(Type.resolveEnum(name));
-					Reflect.setField(this, field.name, FunctionHelper.defaultEnumValueFor(name));
+					Reflect.setField(this, field.name, null);
 				
 				case CFunction(args, ret):
-					switch(ret)
-					{
-						case CClass(name, params):
-							Reflect.setField(this, field.name, FunctionHelper.dynamicFunction(null) );
-						
-						default:
-							"Function return value " + ret + " not supported by mockingbird.";
-					}
-					
+					Reflect.setField(this, field.name, Reflect.makeVarArgs(function(a : Array<Dynamic>) {} ));
 					
 				default:
 					throw "Type " + field.type + " not supported by mockingbird.";
 			}			
 		}
 	}
-	
-	private function resolve(field : String) : Dynamic
-	{
-		throw "RESOLVE: " + field;
-	}
-}
-
-private class FunctionHelper
-{
-	//public static function dynamicFunction(args : List<{ t : CType, opt : Bool, name : String }>, ret : CType) : Dynamic
-	public static function dynamicFunction(returns : Dynamic) : Dynamic
-	{
-		return Reflect.makeVarArgs(function(a : Array<Dynamic>) { return returns; } );
-	}
-
-	public static function defaultEnumValueFor(c : String) : Dynamic
-	{
-		//if (c == "Bool")
-		//	return false;
-			
-		return null;
-	}
-	
-	public static function defaultClassValueFor(c : String) : Dynamic
-	{		
-		/*
-		if (c == "Float")
-			return cast(0.0, Float);
-			
-		if (c == "Int")
-			return cast(0, Int);
-		*/
-			
-		return null;
-	}	
 }
