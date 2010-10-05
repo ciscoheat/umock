@@ -1,11 +1,11 @@
-package mockingbird;
+package umock;
 
 import haxe.rtti.Infos;
 import utest.Assert;
 
-import mockingbird.Mock;
+import umock.Mock;
 
-import mockingbird.TestAll;
+import umock.TestAll;
 
 class TestReturns 
 {

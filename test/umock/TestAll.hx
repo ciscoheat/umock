@@ -1,4 +1,4 @@
-package mockingbird;
+package umock;
 import utest.Runner;
 
 import haxe.rtti.Infos;

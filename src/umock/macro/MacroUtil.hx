@@ -1,4 +1,4 @@
-package mockingbird.macro;
+package umock.macro;
 
 import haxe.macro.Expr;
 import haxe.macro.Context;

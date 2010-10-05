@@ -1,10 +1,10 @@
-package mockingbird;
+package umock;
 
 import haxe.rtti.Infos;
 import utest.Assert;
 
-import mockingbird.Mock;
-import mockingbird.TestAll;
+import umock.Mock;
+import umock.TestAll;
 
 class TestVerify
 {

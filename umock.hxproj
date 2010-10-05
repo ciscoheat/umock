@@ -4,7 +4,7 @@
   <output>
     <movie disabled="False" />
     <movie input="" />
-    <movie path="bin\mockingbird.n" />
+    <movie path="bin\umock.n" />
     <movie fps="0" />
     <movie width="0" />
     <movie height="0" />

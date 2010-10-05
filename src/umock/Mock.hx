@@ -1,4 +1,4 @@
-package mockingbird;
+package umock;
 
 import haxe.rtti.Infos;
 import haxe.rtti.CType;
@@ -7,7 +7,7 @@ import neko.Lib;
 import haxe.macro.Expr;
 import haxe.macro.Context;
 
-import mockingbird.rtti.RttiUtil;
+import umock.rtti.RttiUtil;
 
 /**
  * Gives typesafe information about fields and methods that can be used in Mock.setup()

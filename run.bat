@@ -1,4 +1,4 @@
 @echo off
 cd bin
-neko mockingbird.n
+neko umock.n
 pause

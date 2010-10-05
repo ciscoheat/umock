@@ -13,6 +13,6 @@ class Main
 	
 	@:macro static function runTests()
 	{
-		return MacroRunner.run(new mockingbird.TestAll());
+		return MacroRunner.run(new umock.TestAll());
 	}
 }
