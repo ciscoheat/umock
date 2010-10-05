@@ -53,8 +53,7 @@ class The
 	{
 		var field : String = null;
 		
-		toString(e);
-		
+		//toString(e);		
 		// src/mockingbird/Mock.hx:70: EFunction({ expr => { expr => EBlock([{ expr => EReturn({ expr => EConst(CString(MOCK)), pos => #pos(test/Main.hx:31: characters 44-50) }), pos => #pos(test/Main.hx:31: characters 37-50) }]), pos => #pos(test/Main.hx:31: characters 35-53) }, args => [], ret => null })
 		
 		switch(e.expr)
@@ -66,6 +65,12 @@ class The
 			default:
 				return e;
 		}
+	}
+	
+	@:macro public static function exprToString(e : Expr)
+	{
+		toString(e);
+		return { expr: EConst(CType("Void")), pos: Context.currentPos() };
 	}
 	
 	public static function toString(e : Expr)
@@ -160,10 +165,8 @@ class Mock<T>
 	public function new(type : Class<Dynamic>)
 	{
 		this.type = type;
-		this.mockObject = new MockObject(type);
+		this.mockObject = Std.is(type, Infos) ? new MockObject(type) : Type.createEmptyInstance(type);
 		this.funcCalls = new Hash<Int>();
-		
-		watchFunctions();
 	}
 	
 	private var mockObject : Dynamic;
@@ -175,31 +178,31 @@ class Mock<T>
 	
 	public function setup(field : Dynamic) : MockSetupContext<T>
 	{
-		var fieldName = Reflect.isFunction(field) ? field() : field;
+		var fieldName : String;
+		var isFunc : Bool = false;
 		
-		return new MockSetupContext<T>(this, fieldName);
+		if (Reflect.isFunction(field))
+		{
+			fieldName = field();
+			isFunc = true;
+		}
+		else if(Std.is(field, String))
+			fieldName = field;
+		else
+			throw "Only 'String' or 'Void -> String' are allowed arguments to setup()";
+		
+		return new MockSetupContext<T>(this, fieldName, isFunc);
 	}
 	
-	public function verify(field : String, ?times : Times)
+	public function verify(methodName : String, ?times : Times)
 	{
 		if (times == null)
 			times = new Times(1, false, true);
 		
-		var count = funcCalls.exists(field) ? funcCalls.get(field) : 0;
+		var count = funcCalls.exists(methodName) ? funcCalls.get(methodName) : 0;
 		
 		if (!times.isValid(count))
-			throw new MockException("Mock verification failed: Expected " + times + " to function " + field + ", but was " + count + " call"  + (count == 1 ? "" : "s") + ".");
-	}
-	
-	private function watchFunctions()
-	{
-		for (field in Type.getInstanceFields(type))
-		{			
-			if (Reflect.isFunction(Reflect.field(mockObject, field)))
-			{
-				setup(field).returns(null);
-			}
-		}
+			throw new MockException("Mock verification failed: Expected " + times + " to function " + methodName + ", but was " + count + " call"  + (count == 1 ? "" : "s") + ".");
 	}
 	
 	public var funcCalls : Hash<Int>;
@@ -217,23 +220,24 @@ private class MockSetupContext<T>
 {
 	private var mock : Mock<T>;
 	private var fieldName : Dynamic;
+	private var isFunc : Bool;
 	
-	public function new(mock : Mock<T>, fieldName : String)
+	public function new(mock : Mock<T>, fieldName : String, isFunc : Bool)
 	{
 		this.mock = mock;
 		this.fieldName = fieldName;
+		this.isFunc = isFunc;
 		
-		trace("MockContext: " + fieldName);
+		//trace("MockContext: " + fieldName);
 	}
 	
 	public function returns(value : Dynamic) : MockSetupContext<T>
 	{
-		var field = Reflect.field(mock.object, fieldName);
 		var fieldName = this.fieldName;
 		
-		if (Reflect.isFunction(field))
+		if (isFunc)
 		{
-			//trace("SetupContext: " + field + " is func, returns field " + fieldName);
+			//trace("SetupContext: " + fieldName + " is func, returns field " + fieldName);
 			
 			var p : { private function addCallCount(field : String) : Void; } = mock;
 			
@@ -279,19 +283,11 @@ private class MockObject implements Dynamic
 			//trace(field);			
 			switch(field.type)
 			{
-				case CClass(name, params):
-					//trace(field.name);
-					Reflect.setField(this, field.name, null);
-					
-				case CEnum(name, params):
-					//trace(Type.resolveEnum(name));
-					Reflect.setField(this, field.name, null);
-				
 				case CFunction(args, ret):
 					Reflect.setField(this, field.name, Reflect.makeVarArgs(function(a : Array<Dynamic>) {} ));
 					
 				default:
-					throw "Type " + field.type + " not supported by mockingbird.";
+					Reflect.setField(this, field.name, null);
 			}			
 		}
 	}
