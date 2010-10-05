@@ -211,12 +211,14 @@ private class MockSetupContext<T>
 	private var mock : Mock<T>;
 	private var fieldName : Dynamic;
 	private var isFunc : Bool;
+	private var callBacks : Array<Void -> Void>;
 	
 	public function new(mock : Mock<T>, fieldName : String, isFunc : Bool)
 	{
 		this.mock = mock;
 		this.fieldName = fieldName;
 		this.isFunc = isFunc;
+		this.callBacks = new Array<Void -> Void>();
 	}
 	
 	/**
@@ -227,6 +229,7 @@ private class MockSetupContext<T>
 	public function returns(value : Dynamic) : MockSetupContext<T>
 	{
 		var fieldName = this.fieldName;
+		var calls = this.callBacks;
 		
 		if (isFunc)
 		{
@@ -234,6 +237,8 @@ private class MockSetupContext<T>
 			
 			var returnFunction = Reflect.makeVarArgs(function(args : Array<Dynamic>) {
 				p.addCallCount(fieldName);
+				for (f in calls) f();
+
 				return value;
 			});		
 			
@@ -264,7 +269,14 @@ private class MockSetupContext<T>
 	 */
 	public function callBack(f : Void -> Void) : MockSetupContext<T>
 	{
-		f();
+		if (!isFunc)
+			throw "Callbacks aren't allowed on fields.";
+			
+		// If no function is specified, create a default
+		if (Reflect.field(mock.object, fieldName) == null)
+			returns(null);
+		
+		callBacks.push(f);
 		return this;
 	}
 }

@@ -63,5 +63,6 @@ class TestAll
 	{
 		runner.addCase(new TestReturns());
 		runner.addCase(new TestVerify());
+		runner.addCase(new TestCallback());
 	}
 }
