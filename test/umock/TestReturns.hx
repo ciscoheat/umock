@@ -43,8 +43,18 @@ class TestReturns
 		
 		// Calling methods on an object implementing haxe.rtti.Infos is ok.
 		Assert.isNull(mock.object.length());
-		mock.object.setDate(Date.now());		
+		mock.object.setDate(Date.now());
 	}
+	
+	public function testClassWithInfos()
+	{
+		var mock = new Mock<ClassImplementsInfos>(ClassImplementsInfos);
+
+		// If an object implements infos, umock should detect whether it's
+		// an interface or a real object. So normal methods should be
+		// callable.
+		Assert.equals("123", mock.object.normalMethod(123));
+	}	
 	
 	public function testObjectReturns()
 	{

@@ -120,7 +120,7 @@ class Times
 		return "exactly " + count + " call" + (count == 1 ? "" : "s");
 	}
 }
- 
+
 /**
  * The mock object that handles all setup and verification.
  */
@@ -142,7 +142,21 @@ class Mock<T>
 	 */
 	public function new(type : Class<Dynamic>)
 	{
-		this.mockObject = Reflect.field(type, "__rtti") != null ? new MockObject(type) : Type.createEmptyInstance(type);
+		var object = Type.createEmptyInstance(type);
+		
+		// If an type implements rtti, test all fields on object. If all fields are null
+		// it's probably an interface so then we can create a MockObject to simulate all methods.
+		if (Reflect.field(type, "__rtti") != null)
+		{
+			var notNullFields = Lambda.filter(Type.getInstanceFields(type), function(field : String) { return Reflect.field(object, field) != null; } );
+			if (notNullFields.length == 0)
+			{
+				//trace(Type.getClassName(type) + " becomes a MockObject");
+				object = new MockObject(type);
+			}
+		}
+		
+		this.mockObject = object;
 		this.funcCalls = new Hash<Int>();		
 	}
 

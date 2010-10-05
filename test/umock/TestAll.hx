@@ -51,6 +51,16 @@ class MockMe
 		return "message was called";
 	}
 }
+
+class ClassImplementsInfos implements Infos
+{
+	public function new() { }
+	
+	public function normalMethod(a : Int)
+	{
+		return Std.string(a);
+	}
+}
  
 class TestAll 
 {
