@@ -15,76 +15,30 @@ import mockingbird.rtti.RttiUtil;
  */
 class The
 {
-	private static function const(e : Expr) : Constant
-	{
-		//trace(e);
-		
-		switch(e.expr)
-		{
-			case EField(e, field):
-				//trace(field);
-				return const(e);
-				
-			case EConst(c):
-				return c;
-				
-			default:
-				throw "Not supported expression: " + e.expr;
-		}
-	}
-	
 	@:macro public static function field(e : Expr)
 	{
-		var field : String = null;
-		
 		switch(e.expr)
 		{
 			case EField(e, f):
-				field = f;
+				return { expr: EConst(CString(f)), pos: Context.currentPos() };
 				
 			default:
 				return e;
 		}
-		
-		return { expr: EConst(CString(field)), pos: Context.currentPos() };
 	}
 	
 	@:macro public static function method(e : Expr)
 	{
-		var field : String = null;
-		
-		//toString(e);		
-		// src/mockingbird/Mock.hx:70: EFunction({ expr => { expr => EBlock([{ expr => EReturn({ expr => EConst(CString(MOCK)), pos => #pos(test/Main.hx:31: characters 44-50) }), pos => #pos(test/Main.hx:31: characters 37-50) }]), pos => #pos(test/Main.hx:31: characters 35-53) }, args => [], ret => null })
-		
 		switch(e.expr)
 		{
 			case EField(e, f):
-				// Return an anonymous method that returns the fieldname as value.
+				// Return an anonymous method that returns the fieldname as a string.
 				return { expr: EFunction( {expr: { expr: EReturn( { expr: EConst(CString(f)), pos : Context.currentPos() } ), pos : Context.currentPos() }, args: [], ret: null } ), pos: Context.currentPos() };
 				
 			default:
 				return e;
 		}
-	}
-	
-	@:macro public static function exprToString(e : Expr)
-	{
-		toString(e);
-		return { expr: EConst(CType("Void")), pos: Context.currentPos() };
-	}
-	
-	public static function toString(e : Expr)
-	{
-		trace(e.expr);
-		
-		var o = Std.string(e.expr);
-		var posReplace = ~/#pos.*?characters [0-9]+-[0-9+]./g;
-		o = posReplace.replace(o, "Context.currentPos()");
-		
-		o = StringTools.replace(o, "=>", ":");
-		
-		Lib.println(o);
-	}
+	}	
 }
 
 class Times
@@ -189,7 +143,7 @@ class Mock<T>
 		else if(Std.is(field, String))
 			fieldName = field;
 		else
-			throw "Only 'String' or 'Void -> String' are allowed arguments to setup()";
+			throw "Only 'String' or 'Void -> String' are allowed arguments for setup()";
 		
 		return new MockSetupContext<T>(this, fieldName, isFunc);
 	}
@@ -227,8 +181,6 @@ private class MockSetupContext<T>
 		this.mock = mock;
 		this.fieldName = fieldName;
 		this.isFunc = isFunc;
-		
-		//trace("MockContext: " + fieldName);
 	}
 	
 	public function returns(value : Dynamic) : MockSetupContext<T>
@@ -237,8 +189,6 @@ private class MockSetupContext<T>
 		
 		if (isFunc)
 		{
-			//trace("SetupContext: " + fieldName + " is func, returns field " + fieldName);
-			
 			var p : { private function addCallCount(field : String) : Void; } = mock;
 			
 			var returnFunction = Reflect.makeVarArgs(function(args : Array<Dynamic>) {
@@ -276,11 +226,8 @@ private class MockObject implements Dynamic
 		if (untyped type.__rtti == null)
 			throw "haxe.rtti.Infos must be implemented on " + Type.getClassName(type) + " to mock it.";
 		
-		var self = this;
-			
 		for (field in RttiUtil.getFields(type))
 		{
-			//trace(field);			
 			switch(field.type)
 			{
 				case CFunction(args, ret):
