@@ -3,6 +3,8 @@ package mockingbird;
 import haxe.rtti.Infos;
 import utest.Assert;
 
+import mockingbird.Mock;
+
 /**
  * ...
  * @author Andreas Soderlund
@@ -15,20 +17,38 @@ enum MyEnum {
  
 interface ITest {
 	var x : Int;
-	var y : Int;
+	var y(default, null) : Int;
 	function length() : Int;
-	function setDate(s2 : Date) : Int;
+	function setDate(d : Date) : Int;
 	var isOk : Bool;
 	var e : MyEnum;
 }
 
 interface ITestInfos implements Infos {
 	var x : Int;
-	var y : Int;
+	var y(default, null) : Int;
 	function length() : Int;
-	function setDate(s2 : Date) : Int;
+	function setDate(d : Date) : Int;
 	var isOk : Bool;
 	var e : MyEnum;
+}
+
+class MockMe
+{
+	public var x : Int;
+	var d : Date;
+	
+	public function new() { }
+	
+	public function setDate(d : Date)
+	{
+		this.d = d;
+	}
+	
+	public function message()
+	{
+		return "message was called";
+	}
 }
 
 class TestReturns 
@@ -68,5 +88,88 @@ class TestReturns
 		// Calling methods on an object implementing haxe.rtti.Infos is ok.
 		Assert.isNull(mock.object.length());
 		mock.object.setDate(Date.now());		
+	}
+	
+	public function testObjectReturns()
+	{
+		var mock = new Mock<ITest>(ITest);
+		
+		// Setting a field directly
+		mock.object.x = 100;
+		mock.object.e = MyEnum.Second("mock");
+		
+		Assert.equals(100, mock.object.x);
+		
+		switch(mock.object.e)
+		{
+			case First:
+				Assert.fail("Incorrect enum value.");
+				
+			case Second(s):
+				Assert.equals("mock", s);
+		}
+		
+		// Setting a getter-only is done through mock.setup()
+		mock.setup(The.field(mock.object.y)).returns(200);
+		
+		Assert.equals(200, mock.object.y);
+		
+		// Setting return value of a method
+		mock.setup(The.method(mock.object.length)).returns(300);		
+		Assert.equals(300, mock.object.length());
+
+		// If setup, the object method can be called.
+		mock.setup(The.method(mock.object.setDate)).returns(Void);
+		mock.object.setDate(Date.now());
+	}
+	
+	public function testObjectReturnsWithInfos()
+	{
+		var mock = new Mock<ITestInfos>(ITestInfos);
+		
+		// Setting a field directly
+		mock.object.x = 100;
+		mock.object.e = MyEnum.Second("mock");
+		
+		Assert.equals(100, mock.object.x);
+		
+		switch(mock.object.e)
+		{
+			case First:
+				Assert.fail("Incorrect enum value.");
+				
+			case Second(s):
+				Assert.equals("mock", s);
+		}
+		
+		// Setting a getter-only is done through mock.setup()
+		mock.setup(The.field(mock.object.y)).returns(200);
+		
+		Assert.equals(200, mock.object.y);
+		
+		// Setting return value of a method
+		mock.setup(The.method(mock.object.length)).returns(300);		
+		Assert.equals(300, mock.object.length());
+
+		// If setup, the object method can be called.
+		mock.setup(The.method(mock.object.setDate)).returns(Void);
+		mock.object.setDate(Date.now());
+	}
+	
+	public function testClassMock()
+	{
+		var mock = new Mock<MockMe>(MockMe);
+		
+		Assert.isNull(mock.object.x);
+		Assert.equals("message was called", mock.object.message());
+		
+		// Setting a method on a real object is ok.
+		mock.object.setDate(Date.now());
+		
+		mock.object.x = 100;
+		Assert.equals(100, mock.object.x);
+		
+		mock.setup(The.method(mock.object.message)).returns("call on me");
+		Assert.equals("call on me", mock.object.message());
 	}
 }
