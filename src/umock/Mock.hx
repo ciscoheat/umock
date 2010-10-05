@@ -152,11 +152,13 @@ class Mock<T>
 
 		if (cls == null)
 		{
+			// No class defined, make it a mock object.
 			//trace(name + " becomes a MockObject");
 			mockObject = new MockObject(type);
 		}
 		else
 		{
+			// Class exists, make an empty instance to keep methods.
 			//trace(name + " becomes an EmptyInstance");
 			#if php
 			mockObject = new MockObject(type, Type.createEmptyInstance(cls));
@@ -164,8 +166,9 @@ class Mock<T>
 			mockObject = Type.createEmptyInstance(cls);
 			#end
 		}
-		
-		if (Reflect.field(type, "__rtti") != null)
+
+		/*
+		if (!Std.is(mockObject, MockObject) && Reflect.field(type, "__rtti") != null)
 		{
 			// If an type implements rtti, test all fields on object. If all fields are null
 			// it's probably an interface so then we can create a MockObject to simulate all methods.
@@ -174,10 +177,11 @@ class Mock<T>
 			
 			if (notNullFields.length == 0)
 			{
-				//trace(Type.getClassName(type) + " becomes a MockObject");
+				trace(Type.getClassName(type) + " is redefined from EmptyInstance to MockObject");
 				mockObject = new MockObject(type);
 			}
 		}
+		*/
 				
 		funcCalls = new Hash<Int>();
 	}

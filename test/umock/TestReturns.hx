@@ -41,9 +41,12 @@ class TestReturns
 		Assert.isNull(mock.object.isOk);
 		Assert.isNull(mock.object.e);
 		
+		#if !php
 		// Calling methods on an object implementing haxe.rtti.Infos is ok.
-		Assert.isNull(mock.object.length());
+		// Unfortunately rtti.Infos does not work on php interfaces.
+		Assert.isNull(mock.object.length());		
 		mock.object.setDate(Date.now());
+		#end
 	}
 	
 	public function testClassWithInfos()
