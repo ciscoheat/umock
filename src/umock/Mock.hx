@@ -167,7 +167,6 @@ class Mock<T>
 			#end
 		}
 
-		/*
 		if (!Std.is(mockObject, MockObject) && Reflect.field(type, "__rtti") != null)
 		{
 			// If an type implements rtti, test all fields on object. If all fields are null
@@ -177,11 +176,10 @@ class Mock<T>
 			
 			if (notNullFields.length == 0)
 			{
-				trace(Type.getClassName(type) + " is redefined from EmptyInstance to MockObject");
+				//trace(Type.getClassName(type) + " is redefined from EmptyInstance to MockObject");
 				mockObject = new MockObject(type);
 			}
 		}
-		*/
 				
 		funcCalls = new Hash<Int>();
 	}
