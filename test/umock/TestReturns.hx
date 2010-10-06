@@ -28,8 +28,15 @@ class TestReturns
 		Assert.isNull(mock.object.e);
 		
 		// Calling methods on an object not implementing rtti.Infos throws an exception.
+		// Javascript handles error in a different way and are not caught, but we can
+		// at least test for null.
+		#if !js
 		Assert.raises(function() { mock.object.length(); }, String);
 		Assert.raises(function() { mock.object.setDate(Date.now()); }, String);
+		#else
+		Assert.isNull(mock.object.length);
+		Assert.isNull(mock.object.setDate);
+		#end
 	}
 	
 	public function testEmptyObjectWithInfos()
