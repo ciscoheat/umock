@@ -68,37 +68,37 @@ class Times
 		this.min = min;
 	}
 	
-	public static function Once()
+	public static function once()
 	{
 		return new Times(1);
 	}
 	
-	public static function Never()
+	public static function never()
 	{
 		return new Times(0);
 	}
 
-	public static function AtLeastOnce()
+	public static function atLeastOnce()
 	{
 		return new Times(1, false, true);
 	}
 
-	public static function AtMostOnce()
+	public static function atMostOnce()
 	{
 		return new Times(1, true, false);
 	}
 
-	public static function AtLeast(calls : Int)
+	public static function atLeast(calls : Int)
 	{
 		return new Times(calls, false, true);
 	}
 
-	public static function AtMost(calls : Int)
+	public static function atMost(calls : Int)
 	{
 		return new Times(calls, true, false);
 	}
 
-	public static function Exactly(calls : Int)
+	public static function exactly(calls : Int)
 	{
 		return new Times(calls, false, false);
 	}
@@ -227,7 +227,7 @@ class Mock<T>
 			throw "Only 'String' or 'Void -> String' are allowed arguments for setup()";
 		
 		if (times == null)
-			times = Times.AtLeastOnce();
+			times = Times.atLeastOnce();
 		
 		var count = funcCalls.exists(fieldName) ? funcCalls.get(fieldName) : 0;
 		
@@ -256,7 +256,7 @@ private class MockSetupContext<T>
 		this.mock = mock;
 		this.fieldName = fieldName;
 		this.isFunc = isFunc;
-		this.callBacks = new Array < Void -> Void > ();
+		this.callBacks = new Array<Void -> Void>();
 		
 		//trace("Context: " + fieldName + "(" + isFunc + ")");
 	}
@@ -299,7 +299,7 @@ private class MockSetupContext<T>
 	 * Specifies that a field should throw an exception.
 	 * @param	value Exception to throw.
 	 */
-	public function throws(value : Dynamic)
+	public function throws(value : Dynamic) : MockSetupContext<T>
 	{
 		Reflect.setField(mock.object, fieldName, throw value);
 		return this;

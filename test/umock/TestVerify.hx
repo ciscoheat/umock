@@ -21,16 +21,16 @@ class TestVerify
 	{
 		var mock = new Mock<ITest>(ITest);
 
-		mock.verify(The.method(mock.object.length), Times.Never());
-		Assert.raises(function() { mock.verify(The.method(mock.object.length), Times.Once()); }, MockException);
+		mock.verify(The.method(mock.object.length), Times.never());
+		Assert.raises(function() { mock.verify(The.method(mock.object.length), Times.once()); }, MockException);
 	}
 	
 	public function testEmptyObjectWithInfos()
 	{
 		var mock = new Mock<ITestInfos>(ITestInfos);
 
-		mock.verify(The.method(mock.object.length), Times.Never());
-		Assert.raises(function() { mock.verify(The.method(mock.object.length), Times.Once()); }, MockException);
+		mock.verify(The.method(mock.object.length), Times.never());
+		Assert.raises(function() { mock.verify(The.method(mock.object.length), Times.once()); }, MockException);
 	}
 	
 	public function testObjectVerify()
@@ -39,24 +39,24 @@ class TestVerify
 		
 		mock.setup(The.method(mock.object.length)).returns(123);
 		
-		mock.verify(The.method(mock.object.length), Times.Never());
-		mock.verify(The.method(mock.object.length), Times.Exactly(0));
+		mock.verify(The.method(mock.object.length), Times.never());
+		mock.verify(The.method(mock.object.length), Times.exactly(0));
 		
 		mock.object.length();
-		mock.verify(The.method(mock.object.length), Times.Once());
-		mock.verify(The.method(mock.object.length), Times.AtMostOnce());
-		mock.verify(The.method(mock.object.length), Times.AtLeastOnce());
-		mock.verify(The.method(mock.object.length), Times.Exactly(1));
+		mock.verify(The.method(mock.object.length), Times.once());
+		mock.verify(The.method(mock.object.length), Times.atMostOnce());
+		mock.verify(The.method(mock.object.length), Times.atLeastOnce());
+		mock.verify(The.method(mock.object.length), Times.exactly(1));
 		
 		mock.object.length();
-		mock.verify(The.method(mock.object.length), Times.AtLeast(1));
-		mock.verify(The.method(mock.object.length), Times.Exactly(2));
-		mock.verify(The.method(mock.object.length), Times.AtLeast(2));
-		mock.verify(The.method(mock.object.length), Times.AtMost(2));
-		mock.verify(The.method(mock.object.length), Times.AtMost(3));
+		mock.verify(The.method(mock.object.length), Times.atLeast(1));
+		mock.verify(The.method(mock.object.length), Times.exactly(2));
+		mock.verify(The.method(mock.object.length), Times.atLeast(2));
+		mock.verify(The.method(mock.object.length), Times.atMost(2));
+		mock.verify(The.method(mock.object.length), Times.atMost(3));
 
-		Assert.raises(function() { mock.verify(The.method(mock.object.length), Times.Never()); }, MockException);
-		Assert.raises(function() { mock.verify(The.method(mock.object.length), Times.Once()); }, MockException);
+		Assert.raises(function() { mock.verify(The.method(mock.object.length), Times.never()); }, MockException);
+		Assert.raises(function() { mock.verify(The.method(mock.object.length), Times.once()); }, MockException);
 	}
 	
 	public function testObjectReturnsWithInfos()
@@ -65,24 +65,24 @@ class TestVerify
 		
 		mock.setup(The.method(mock.object.length)).returns(123);
 		
-		mock.verify(The.method(mock.object.length), Times.Never());
-		mock.verify(The.method(mock.object.length), Times.Exactly(0));
+		mock.verify(The.method(mock.object.length), Times.never());
+		mock.verify(The.method(mock.object.length), Times.exactly(0));
 		
 		mock.object.length();
-		mock.verify(The.method(mock.object.length), Times.Once());
-		mock.verify(The.method(mock.object.length), Times.AtMostOnce());
-		mock.verify(The.method(mock.object.length), Times.AtLeastOnce());
-		mock.verify(The.method(mock.object.length), Times.Exactly(1));
+		mock.verify(The.method(mock.object.length), Times.once());
+		mock.verify(The.method(mock.object.length), Times.atMostOnce());
+		mock.verify(The.method(mock.object.length), Times.atLeastOnce());
+		mock.verify(The.method(mock.object.length), Times.exactly(1));
 		
 		mock.object.length();
-		mock.verify(The.method(mock.object.length), Times.AtLeast(1));
-		mock.verify(The.method(mock.object.length), Times.Exactly(2));
-		mock.verify(The.method(mock.object.length), Times.AtLeast(2));
-		mock.verify(The.method(mock.object.length), Times.AtMost(2));
-		mock.verify(The.method(mock.object.length), Times.AtMost(3));
+		mock.verify(The.method(mock.object.length), Times.atLeast(1));
+		mock.verify(The.method(mock.object.length), Times.exactly(2));
+		mock.verify(The.method(mock.object.length), Times.atLeast(2));
+		mock.verify(The.method(mock.object.length), Times.atMost(2));
+		mock.verify(The.method(mock.object.length), Times.atMost(3));
 		
-		Assert.raises(function() { mock.verify(The.method(mock.object.length), Times.Never()); }, MockException);
-		Assert.raises(function() { mock.verify(The.method(mock.object.length), Times.Once()); }, MockException);		
+		Assert.raises(function() { mock.verify(The.method(mock.object.length), Times.never()); }, MockException);
+		Assert.raises(function() { mock.verify(The.method(mock.object.length), Times.once()); }, MockException);		
 	}
 	
 	public function testClassMock()
@@ -91,24 +91,24 @@ class TestVerify
 		
 		mock.setup(The.method(mock.object.message)).returns("call on me");
 		
-		mock.verify(The.method(mock.object.message), Times.Never());
-		mock.verify(The.method(mock.object.message), Times.Exactly(0));
+		mock.verify(The.method(mock.object.message), Times.never());
+		mock.verify(The.method(mock.object.message), Times.exactly(0));
 		
 		mock.object.message();
-		mock.verify(The.method(mock.object.message), Times.Once());
-		mock.verify(The.method(mock.object.message), Times.AtMostOnce());
-		mock.verify(The.method(mock.object.message), Times.AtLeastOnce());
-		mock.verify(The.method(mock.object.message), Times.Exactly(1));
+		mock.verify(The.method(mock.object.message), Times.once());
+		mock.verify(The.method(mock.object.message), Times.atMostOnce());
+		mock.verify(The.method(mock.object.message), Times.atLeastOnce());
+		mock.verify(The.method(mock.object.message), Times.exactly(1));
 		
 		mock.object.message();
-		mock.verify(The.method(mock.object.message), Times.AtLeast(1));
-		mock.verify(The.method(mock.object.message), Times.Exactly(2));
-		mock.verify(The.method(mock.object.message), Times.AtLeast(2));
-		mock.verify(The.method(mock.object.message), Times.AtMost(2));
-		mock.verify(The.method(mock.object.message), Times.AtMost(3));
+		mock.verify(The.method(mock.object.message), Times.atLeast(1));
+		mock.verify(The.method(mock.object.message), Times.exactly(2));
+		mock.verify(The.method(mock.object.message), Times.atLeast(2));
+		mock.verify(The.method(mock.object.message), Times.atMost(2));
+		mock.verify(The.method(mock.object.message), Times.atMost(3));
 		
-		Assert.raises(function() { mock.verify(The.method(mock.object.message), Times.Never()); }, MockException);
-		Assert.raises(function() { mock.verify(The.method(mock.object.message), Times.Once()); }, MockException);		
+		Assert.raises(function() { mock.verify(The.method(mock.object.message), Times.never()); }, MockException);
+		Assert.raises(function() { mock.verify(The.method(mock.object.message), Times.once()); }, MockException);		
 	}
 	
 	public function testClassMockParams()
@@ -119,23 +119,23 @@ class TestVerify
 		// For verifying a method on an object, returns() must be called.
 		mock.setup(The.method(mock.object.setDate)).returns(aDate);
 		
-		mock.verify(The.method(mock.object.setDate), Times.Never());
-		mock.verify(The.method(mock.object.setDate), Times.Exactly(0));
+		mock.verify(The.method(mock.object.setDate), Times.never());
+		mock.verify(The.method(mock.object.setDate), Times.exactly(0));
 		
 		mock.object.setDate(Date.now());
-		mock.verify(The.method(mock.object.setDate), Times.Once());
-		mock.verify(The.method(mock.object.setDate), Times.AtMostOnce());
-		mock.verify(The.method(mock.object.setDate), Times.AtLeastOnce());
-		mock.verify(The.method(mock.object.setDate), Times.Exactly(1));
+		mock.verify(The.method(mock.object.setDate), Times.once());
+		mock.verify(The.method(mock.object.setDate), Times.atMostOnce());
+		mock.verify(The.method(mock.object.setDate), Times.atLeastOnce());
+		mock.verify(The.method(mock.object.setDate), Times.exactly(1));
 		
 		mock.object.setDate(Date.now());
-		mock.verify(The.method(mock.object.setDate), Times.AtLeast(1));
-		mock.verify(The.method(mock.object.setDate), Times.Exactly(2));
-		mock.verify(The.method(mock.object.setDate), Times.AtLeast(2));
-		mock.verify(The.method(mock.object.setDate), Times.AtMost(2));
-		mock.verify(The.method(mock.object.setDate), Times.AtMost(3));
+		mock.verify(The.method(mock.object.setDate), Times.atLeast(1));
+		mock.verify(The.method(mock.object.setDate), Times.exactly(2));
+		mock.verify(The.method(mock.object.setDate), Times.atLeast(2));
+		mock.verify(The.method(mock.object.setDate), Times.atMost(2));
+		mock.verify(The.method(mock.object.setDate), Times.atMost(3));
 		
-		Assert.raises(function() { mock.verify(The.method(mock.object.setDate), Times.Never()); }, MockException);
-		Assert.raises(function() { mock.verify(The.method(mock.object.setDate), Times.Once()); }, MockException);		
+		Assert.raises(function() { mock.verify(The.method(mock.object.setDate), Times.never()); }, MockException);
+		Assert.raises(function() { mock.verify(The.method(mock.object.setDate), Times.once()); }, MockException);		
 	}
 }
