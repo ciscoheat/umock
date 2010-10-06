@@ -2,22 +2,16 @@ package umock;
 
 import haxe.rtti.Infos;
 import haxe.rtti.CType;
+import umock.rtti.RttiUtil;
 
-#if neko
-import neko.Lib;
-#elseif php
-import php.Lib;
-#end
-
+#if withmacro
 import haxe.macro.Expr;
 import haxe.macro.Context;
-
-import umock.rtti.RttiUtil;
 
 /**
  * Gives typesafe information about fields and methods that can be used in Mock.setup()
  * @author Andreas Soderlund
- * @example mock.setup(The.field(mock.object.a)).returns(123);
+ * @example mock.setupField("x")).returns(123);
  */
 class The
 {
@@ -49,8 +43,9 @@ class The
 				// If no match, return itself to get intellisense.
 				return e;
 		}
-	}	
+	}
 }
+#end
 
 /**
  * Verifies if a method has been called the correct number of times.
@@ -188,7 +183,7 @@ class Mock<T>
 	 * Setup a field (or method) so that it returns a specific value.
 	 * @param	field 'String' for setting up a field, 'Void -> String' to setup a method. The method should return the fieldname.
 	 * @return  A context object that will be used to define behavior.
-	 * @example mock.setup(The.method(mock.object.getDate)).returns(Date.now());
+	 * @example mock..setupMethod("getDate")).returns(Date.now());
 	 */
 	public function setup(field : Dynamic) : MockSetupContext<T>
 	{
@@ -208,11 +203,22 @@ class Mock<T>
 		return new MockSetupContext<T>(this, fieldName, isFunc);
 	}
 	
+	public function setupField(fieldName : String)
+	{
+		return setup(fieldName);
+	}
+	
+	public function setupMethod(methodName : String)
+	{
+		return setup(function() { return methodName; });
+	}
+
+	
 	/**
 	 * Verifies that a method has been called a specific number of times.
 	 * @param	methodName name of method
 	 * @param	?times Verification object. Use the static Times class to create constraints.
-	 * @example mock.verify(The.method(mock.object.getDate), Times.Once());
+	 * @example mock.verify("getDate", Times.Once());
 	 * @throws  MockException if the verification fails.
 	 */
 	public function verify(field : Dynamic, ?times : Times)
@@ -301,7 +307,12 @@ private class MockSetupContext<T>
 	 */
 	public function throws(value : Dynamic) : MockSetupContext<T>
 	{
-		Reflect.setField(mock.object, fieldName, throw value);
+		if (!isFunc)
+			throw "throws() isn't allowed on fields.";
+
+		var thrower = Reflect.makeVarArgs(function(args : Array<Dynamic>) { throw value; } );
+		
+		Reflect.setField(mock.object, fieldName, thrower);
 		return this;
 	}
 	
@@ -313,7 +324,7 @@ private class MockSetupContext<T>
 	public function callBack(f : Void -> Void) : MockSetupContext<T>
 	{
 		if (!isFunc)
-			throw "Callbacks aren't allowed on fields.";
+			throw "callBack() isn't allowed on fields.";
 			
 		// If no function is specified, create a default
 		if (Reflect.field(mock.object, fieldName) == null)

@@ -26,7 +26,7 @@ class TestReturns
 		Assert.isNull(mock.object.y);
 		Assert.isNull(mock.object.isOk);
 		Assert.isNull(mock.object.e);
-		
+				
 		// Calling methods on an object not implementing rtti.Infos throws an exception.
 		// Javascript handles error in a different way and are not caught, but we can
 		// at least test for null.
@@ -86,17 +86,33 @@ class TestReturns
 		}
 		
 		// Setting a getter-only is done through mock.setup()
-		mock.setup(The.field(mock.object.y)).returns(200);
+		mock.setupField("y").returns(200);
 		
 		Assert.equals(200, mock.object.y);
 		
 		// Setting return value of a method
-		mock.setup(The.method(mock.object.length)).returns(300);		
+		mock.setupMethod("length").returns(300);		
 		Assert.equals(300, mock.object.length());
 
 		// If setup, the object method can be called.
-		mock.setup(The.method(mock.object.setDate)).returns(Void);
+		mock.setupMethod("setDate").returns(Void);
 		mock.object.setDate(Date.now());
+		
+		mock.setupMethod("length").throws("Method exception!");
+		Assert.raises(function() { mock.object.length(); }, String);
+
+		// Throws cannot be set on fields.
+		Assert.raises(function() { mock.setupField("y").throws("Field exception!"); }, String);
+
+		#if withmacro
+		// Testing if "The" works correctly
+		mock.setup(The.field(mock.object.y)).returns(500);
+		Assert.equals(500, mock.object.y);
+		
+		// Setting return value of a method
+		mock.setup(The.method(mock.object.length)).returns(600);
+		Assert.equals(600, mock.object.length());
+		#end
 	}
 	
 	public function testObjectReturnsWithInfos()
@@ -119,17 +135,23 @@ class TestReturns
 		}
 		
 		// Setting a getter-only is done through mock.setup()
-		mock.setup(The.field(mock.object.y)).returns(200);
+		mock.setupField("y").returns(200);
 		
 		Assert.equals(200, mock.object.y);
 		
 		// Setting return value of a method
-		mock.setup(The.method(mock.object.length)).returns(300);		
+		mock.setupMethod("length").returns(300);		
 		Assert.equals(300, mock.object.length());
 
 		// If setup, the object method can be called.
-		mock.setup(The.method(mock.object.setDate)).returns(Void);
+		mock.setupMethod("setDate").returns(Void);
 		mock.object.setDate(Date.now());
+		
+		mock.setupMethod("length").throws("Method exception!");
+		Assert.raises(function() { mock.object.length(); }, String);
+
+		// Throws cannot be set on fields.
+		Assert.raises(function() { mock.setupField("y").throws("Field exception!"); }, String);
 	}
 	
 	public function testClassMock()
@@ -145,7 +167,13 @@ class TestReturns
 		mock.object.x = 100;
 		Assert.equals(100, mock.object.x);
 		
-		mock.setup(The.method(mock.object.message)).returns("call on me");
+		mock.setupMethod("message").returns("call on me");
 		Assert.equals("call on me", mock.object.message());
-	}
+		
+		mock.setupMethod("message").throws("Method exception!");
+		Assert.raises(function() { mock.object.message(); }, String);
+
+		// Throws cannot be set on fields.
+		Assert.raises(function() { mock.setupField("x").throws("Field exception!"); }, String);
+	}	
 }

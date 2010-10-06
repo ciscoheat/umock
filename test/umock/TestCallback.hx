@@ -23,9 +23,9 @@ class TestCallback
 		var i = 0;
 
 		// Cannot set callbacks on fields.
-		Assert.raises(function() { mock.setup(The.field(mock.object.x)).callBack(function() { i++; } ); }, String);
+		Assert.raises(function() { mock.setupField("x").callBack(function() { i++; } ); }, String);
 		
-		mock.setup(The.method(mock.object.length)).callBack(function() { i++; } );
+		mock.setupMethod("length").callBack(function() { i++; } );
 		Assert.equals(0, i);
 		mock.object.length();
 		Assert.equals(1, i);
