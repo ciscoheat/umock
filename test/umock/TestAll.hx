@@ -22,6 +22,8 @@ interface ITest {
 	var e : MyEnum;
 }
 
+#if !cpp
+// C++ doesn't support interfaces that implements Infos
 interface ITestInfos implements Infos {
 	var x : Int;
 	var y(default, null) : Int;
@@ -30,6 +32,7 @@ interface ITestInfos implements Infos {
 	var isOk : Bool;
 	var e : MyEnum;
 }
+#end
 
 class MockMe
 {

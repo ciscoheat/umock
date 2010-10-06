@@ -38,7 +38,8 @@ class TestReturns
 		Assert.isNull(mock.object.setDate);
 		#end
 	}
-	
+
+	#if !cpp
 	public function testEmptyObjectWithInfos()
 	{
 		var mock = new Mock<ITestInfos>(ITestInfos);
@@ -55,6 +56,7 @@ class TestReturns
 		mock.object.setDate(Date.now());
 		#end
 	}
+	#end
 	
 	public function testClassWithInfos()
 	{
@@ -115,6 +117,7 @@ class TestReturns
 		#end
 	}
 	
+	#if !cpp
 	public function testObjectReturnsWithInfos()
 	{
 		var mock = new Mock<ITestInfos>(ITestInfos);
@@ -153,6 +156,7 @@ class TestReturns
 		// Throws cannot be set on fields.
 		Assert.raises(function() { mock.setupField("y").throws("Field exception!"); }, String);
 	}
+	#end
 	
 	public function testClassMock()
 	{

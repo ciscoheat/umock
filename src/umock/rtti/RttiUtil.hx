@@ -101,12 +101,11 @@ class RttiUtil
 	
 	public static function getRtti(classType : Class<Dynamic>) : String
 	{
-		var rtti : String = untyped classType.__rtti;
-		if(rtti == null)
+		if(!Reflect.hasField(classType, "__rtti"))
 		{
 			throw 'No RTTI information found in ' + classType + ' (class must implement haxe.rtti.Infos)';
 		}
 		
-		return rtti;
+		return Reflect.field(classType, "__rtti");
 	}
 }

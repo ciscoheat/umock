@@ -162,7 +162,7 @@ class Mock<T>
 			#end
 		}
 
-		if (!Std.is(mockObject, MockObject) && Reflect.field(type, "__rtti") != null)
+		if (!Std.is(mockObject, MockObject) && Reflect.hasField(type, "__rtti"))
 		{
 			// If an type implements rtti, test all fields on object. If all fields are null
 			// it's probably an interface so then we can create a MockObject to simulate all methods.
@@ -347,7 +347,7 @@ private class MockObject implements Dynamic
 				Reflect.setField(this, field, Reflect.field(realObject, field));
 			}			
 		}
-		else if (untyped type.__rtti == null)
+		else if (!Reflect.hasField(type, "__rtti"))
 		{
 			for (field in Type.getInstanceFields(type))
 			{

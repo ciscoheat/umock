@@ -29,7 +29,8 @@ class TestVerify
 		mock.verify(The.method(mock.object.length), Times.never());
 		#end
 	}
-	
+
+	#if !cpp
 	public function testEmptyObjectWithInfos()
 	{
 		var mock = new Mock<ITestInfos>(ITestInfos);
@@ -37,6 +38,7 @@ class TestVerify
 		mock.verify("length", Times.never());
 		Assert.raises(function() { mock.verify("length", Times.once()); }, MockException);
 	}
+	#end
 	
 	public function testObjectVerify()
 	{
@@ -64,6 +66,7 @@ class TestVerify
 		Assert.raises(function() { mock.verify("length", Times.once()); }, MockException);
 	}
 	
+	#if !cpp
 	public function testObjectReturnsWithInfos()
 	{
 		var mock = new Mock<ITestInfos>(ITestInfos);		
@@ -89,6 +92,7 @@ class TestVerify
 		Assert.raises(function() { mock.verify("length", Times.never()); }, MockException);
 		Assert.raises(function() { mock.verify("length", Times.once()); }, MockException);		
 	}
+	#end
 	
 	public function testClassMock()
 	{
