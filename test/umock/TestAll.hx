@@ -12,7 +12,12 @@ import haxe.rtti.Infos;
 	First;
 	Second(s : String);
 }
- 
+
+interface IParamReturn {
+	function gimme(s : String, ?i : Int) : String;
+	function nullTest(s : String) : Int;
+}
+
 interface ITest {
 	var x : Int;
 	var y(default, null) : Int;
@@ -33,6 +38,11 @@ interface ITestInfos implements Infos {
 	var e : MyEnum;
 }
 #end
+
+interface IMockFunction
+{
+	function f() : Void -> Int;
+}
 
 class MockMe
 {
@@ -77,5 +87,6 @@ class TestAll
 		runner.addCase(new TestReturns());
 		runner.addCase(new TestVerify());
 		runner.addCase(new TestCallback());
+		runner.addCase(new TestParams());
 	}
 }

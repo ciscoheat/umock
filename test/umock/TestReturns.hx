@@ -179,5 +179,33 @@ class TestReturns
 
 		// Throws cannot be set on fields.
 		Assert.raises(function() { mock.setupField("x").throws("Field exception!"); }, String);
-	}	
+	}
+
+	public function testNotLazyReturn()
+	{
+		var i = 20;
+		var mock = new Mock<IMockFunction>(IMockFunction);
+		
+		mock.setupMethod("f").returns(function() { return ++i; } );
+		
+		Assert.equals(20, i);
+		var output = mock.object.f();
+		Assert.isTrue(Reflect.isFunction(output));
+		Assert.equals(20, i);
+		
+		Assert.equals(21, output());
+		Assert.equals(21, i);
+	}
+	
+	public function testLazyReturn()
+	{
+		var i = 20;
+		var mock = new Mock<MockMe>(MockMe);
+		
+		mock.setupMethod("message").returnsLazy(function() { return ++i; } );
+		
+		Assert.equals(20, i);
+		Assert.equals(21, mock.object.message());
+		Assert.equals(21, i);
+	}
 }

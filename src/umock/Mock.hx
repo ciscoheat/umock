@@ -63,40 +63,19 @@ class Times
 		this.min = min;
 	}
 	
-	public static function once()
-	{
-		return new Times(1);
-	}
+	public static function once() {	return new Times(1); }
 	
-	public static function never()
-	{
-		return new Times(0);
-	}
+	public static function never() { return new Times(0); }
 
-	public static function atLeastOnce()
-	{
-		return new Times(1, false, true);
-	}
+	public static function atLeastOnce() { return new Times(1, false, true); }
 
-	public static function atMostOnce()
-	{
-		return new Times(1, true, false);
-	}
+	public static function atMostOnce() { return new Times(1, true, false);	}
 
-	public static function atLeast(calls : Int)
-	{
-		return new Times(calls, false, true);
-	}
+	public static function atLeast(calls : Int) { return new Times(calls, false, true);	}
 
-	public static function atMost(calls : Int)
-	{
-		return new Times(calls, true, false);
-	}
+	public static function atMost(calls : Int) { return new Times(calls, true, false); }
 
-	public static function exactly(calls : Int)
-	{
-		return new Times(calls, false, false);
-	}
+	public static function exactly(calls : Int) { return new Times(calls, false, false); }
 
 	public function isValid(callCount : Int)
 	{
@@ -121,13 +100,67 @@ class Times
 	}
 }
 
+class It
+{
+	var typeConstraint : Class<Dynamic>;
+	var valueConstraint : Dynamic;
+	var regexConstraint : EReg;
+	var isNull : Bool;
+	
+	public function new(?typeConstraint : Class<Dynamic>, ?valueConstraint : Dynamic, ?regexConstraint : EReg, ?isNull : Bool)
+	{
+		this.typeConstraint = typeConstraint;
+		this.valueConstraint = valueConstraint;
+		this.regexConstraint = regexConstraint;
+		this.isNull = isNull;
+	}
+	
+	public function isAny()
+	{
+		return typeConstraint != null && valueConstraint == null && regexConstraint == null && isNull == null;
+	}
+	
+	public static function IsNull() : It
+	{
+		return new It(null, null, null, true);
+	}
+	
+	public static function IsAny(type : Class<Dynamic>) : It
+	{
+		return new It(type);
+	}
+	
+	public static function IsRegex(regex : EReg) : It
+	{
+		return new It(null, null, regex);
+	}
+	
+	public function matches(value : Dynamic)
+	{
+		if (isNull == true && value == null)
+			return true;
+		
+		if (typeConstraint != null && !Std.is(value, typeConstraint))
+			return false;
+		
+		if (valueConstraint != null && value != valueConstraint)
+			return false;
+			
+		if (regexConstraint != null && !regexConstraint.match(Std.string(value)))
+			return false;
+			
+		return true;
+	}
+}
+
 /**
  * The mock object that handles all setup and verification.
  */
 class Mock<T>
 {	
-	public var funcCalls : Hash<Int>;
-
+	public var funcCalls(default, null) : Hash<Int>;
+	var funcParameters : Hash<Array<ParameterConstraint>>;
+	
 	private var mockObject : Dynamic;
 	public var object(getObject, null) : T;
 	private function getObject() : T
@@ -177,6 +210,7 @@ class Mock<T>
 		}
 				
 		funcCalls = new Hash<Int>();
+		funcParameters = new Hash<Array<ParameterConstraint>>();
 	}
 
 	/**
@@ -185,7 +219,7 @@ class Mock<T>
 	 * @return  A context object that will be used to define behavior.
 	 * @example mock..setupMethod("getDate")).returns(Date.now());
 	 */
-	public function setup(field : Dynamic) : MockSetupContext<T>
+	public function setup(field : Dynamic) : MockSetupParamContext<T>
 	{
 		var fieldName : String;
 		var isFunc : Bool = false;
@@ -199,8 +233,8 @@ class Mock<T>
 			fieldName = field;
 		else
 			throw "Only 'String' or 'Void -> String' are allowed arguments for setup()";
-		
-		return new MockSetupContext<T>(this, fieldName, isFunc);
+					
+		return new MockSetupParamContext<T>(this, fieldName, isFunc);
 	}
 	
 	public function setupField(fieldName : String)
@@ -247,8 +281,102 @@ class Mock<T>
 			funcCalls.set(field, 1);
 		else
 			funcCalls.set(field, funcCalls.get(field) + 1);
-	}	
+	}
+	
+	private function addParams(field : String, params : ParameterConstraint) : Void
+	{
+		if (!funcParameters.exists(field))
+			funcParameters.set(field, [params]);
+		else
+		{
+			funcParameters.get(field).push(params);
+			
+			// Sort the parameter arrays so the arrays with most parameters comes first.
+			// If equal parameters, sort the It.IsAny() parameters last.
+			funcParameters.get(field).sort(function(x : ParameterConstraint, y : ParameterConstraint) {
+				var test = y.parameters.length - x.parameters.length;
+				return test == 0 ? sortIsAny(x, y) : test;
+			});
+		}
+	}
+	
+	private static function sortIsAny(x : ParameterConstraint, y : ParameterConstraint) : Int
+	{
+		var xCount = 0;
+		var yCount = 0;
+		
+		// Two constraints with equal number of parameters. Least number of It.IsAny goes first.
+		for (i in 0 ... x.parameters.length)
+		{
+			var x = x.parameters[i];
+			var y = y.parameters[i];
+			
+			if (Std.is(x, It) && cast(x, It).isAny()) xCount++;
+			if (Std.is(y, It) && cast(y, It).isAny()) yCount++;
+		}
+		
+		return xCount - yCount;
+	}
+		
+	private function returnValue(field : String, args : Array<Dynamic>) : Dynamic
+	{
+		// Because optional arguments are specified by null, two rules must be made to
+		// differ between cases, otherwise the constraints will mismatch.
+		var parameters : List<ParameterConstraint>;
+		var allParameters = funcParameters.get(field);
+		var argsLength = args.length;
+		
+		// If args are without null, get only the constraints that are exactly that length.
+		// If not, get all constraints up to that length.
+		if (Lambda.exists(args, function(arg : Dynamic) { return arg == null; } ))
+		{
+			parameters = Lambda.filter(allParameters, function(param : ParameterConstraint) { return param.parameters.length <= argsLength; } );
+		}
+		else
+		{
+			parameters = Lambda.filter(allParameters, function(param : ParameterConstraint) { return param.parameters.length == argsLength; } );
+		}
+		
+		for (p in parameters)
+		{
+			var output = p.returnIfMatches(args);
+			if (output != null) return output;
+		}
+		
+		return null;
+	}
 }
+
+private class MockSetupParamContext<T> extends MockSetupContext<T>
+{
+	public function new(mock : Mock<T>, fieldName : String, isFunc : Bool)
+	{
+		super(mock, fieldName, isFunc);
+	}
+
+	public function withParams(p1 : Dynamic, ?p2 : Dynamic, ?p3 : Dynamic, ?p4 : Dynamic, ?p5 : Dynamic, ?p6 : Dynamic, ?p7 : Dynamic, ?p8 : Dynamic) : MockSetupContext<T>
+	{
+		if (!isFunc)
+			throw "withParams() isn't allowed on properties.";
+
+		parameters = [p1];
+		if (p2 != null) parameters.push(p2);
+		if (p3 != null) parameters.push(p3);
+		if (p4 != null) parameters.push(p4);
+		if (p5 != null) parameters.push(p5);
+		if (p6 != null) parameters.push(p6);
+		if (p7 != null) parameters.push(p7);
+		if (p8 != null) parameters.push(p8);
+				
+		return this;
+	}
+}
+
+private typedef MockFriend = {
+	private function addCallCount(field : String) : Void;
+	private function addParams(field : String, params : ParameterConstraint) : Void;
+	private function returnValue(field : String, args : Array<Dynamic>) : Dynamic;
+};
 
 private class MockSetupContext<T>
 {
@@ -256,15 +384,24 @@ private class MockSetupContext<T>
 	private var fieldName : Dynamic;
 	private var isFunc : Bool;
 	private var callBacks : Array<Void -> Void>;
+	private var parameters : Array<Dynamic>;
+	private var isLazy : Bool;
 	
 	public function new(mock : Mock<T>, fieldName : String, isFunc : Bool)
 	{
 		this.mock = mock;
 		this.fieldName = fieldName;
 		this.isFunc = isFunc;
+		this.isLazy = false;
 		this.callBacks = new Array<Void -> Void>();
 		
 		//trace("Context: " + fieldName + "(" + isFunc + ")");
+	}
+	
+	public function returnsLazy(f : Void -> Dynamic) : MockSetupContext<T>
+	{
+		isLazy = true;
+		return returns(f);
 	}
 	
 	/**
@@ -279,16 +416,18 @@ private class MockSetupContext<T>
 		
 		if (isFunc)
 		{
+			// TODO: Move return values to separate structure.
 			//trace("Function: " + fieldName + " on " + mock.object + " should return " + value);
 			
-			var p : { private function addCallCount(field : String) : Void; } = mock;
+			var p : MockFriend = mock;
+			
+			p.addParams(fieldName, new ParameterConstraint(value, parameters, isLazy));
 			
 			var returnFunction = Reflect.makeVarArgs(function(args : Array<Dynamic>) {
 				//trace("addCallCount: " + fieldName);
 				p.addCallCount(fieldName);
-				for (f in calls) f();
-
-				return value;
+				for (f in calls) f();				
+				return p.returnValue(fieldName, args);
 			});		
 			
 			Reflect.setField(mock.object, fieldName, returnFunction);
@@ -308,7 +447,7 @@ private class MockSetupContext<T>
 	public function throws(value : Dynamic) : MockSetupContext<T>
 	{
 		if (!isFunc)
-			throw "throws() isn't allowed on fields.";
+			throw "throws() isn't allowed on properties.";
 
 		var thrower = Reflect.makeVarArgs(function(args : Array<Dynamic>) { throw value; } );
 		
@@ -324,7 +463,7 @@ private class MockSetupContext<T>
 	public function callBack(f : Void -> Void) : MockSetupContext<T>
 	{
 		if (!isFunc)
-			throw "callBack() isn't allowed on fields.";
+			throw "callBack() isn't allowed on properties.";
 			
 		// If no function is specified, create a default
 		if (Reflect.field(mock.object, fieldName) == null)
