@@ -115,7 +115,7 @@ class It
 		this.isNull = isNull;
 	}
 	
-	public function isAny()
+	public function isAnyIt() // Strange name because of PHP limitation.
 	{
 		return typeConstraint != null && valueConstraint == null && regexConstraint == null && isNull == null;
 	}
@@ -137,8 +137,7 @@ class It
 	
 	public function matches(value : Dynamic)
 	{
-		if (isNull == true && value == null)
-			return true;
+		if (isNull == true) return value == null;
 		
 		if (typeConstraint != null && !Std.is(value, typeConstraint))
 			return false;
@@ -311,8 +310,8 @@ class Mock<T>
 			var x = x.parameters[i];
 			var y = y.parameters[i];
 			
-			if (Std.is(x, It) && cast(x, It).isAny()) xCount++;
-			if (Std.is(y, It) && cast(y, It).isAny()) yCount++;
+			if (Std.is(x, It) && cast(x, It).isAnyIt()) xCount++;
+			if (Std.is(y, It) && cast(y, It).isAnyIt()) yCount++;
 		}
 		
 		return xCount - yCount;
@@ -367,7 +366,7 @@ private class MockSetupParamContext<T> extends MockSetupContext<T>
 		if (p6 != null) parameters.push(p6);
 		if (p7 != null) parameters.push(p7);
 		if (p8 != null) parameters.push(p8);
-				
+		
 		return this;
 	}
 }
@@ -398,6 +397,11 @@ private class MockSetupContext<T>
 		//trace("Context: " + fieldName + "(" + isFunc + ")");
 	}
 	
+	/**
+	 * Returns a value through a callback function.
+	 * @param	f callback function
+	 * @return	any value
+	 */
 	public function returnsLazy(f : Void -> Dynamic) : MockSetupContext<T>
 	{
 		isLazy = true;

@@ -35,20 +35,21 @@ class ParameterConstraint
 		
 		//trace("=== " + parameters.length + " - " + args.length);
 		//trace(args);
+		//trace(parameters);
 		
 		// If arguments to the method are less than the parameter constraints, it will fail.
 		if (args.length < parameters.length) return null;
 		
 		for (i in 0 ... parameters.length)
 		{
+			//trace("Testing " + args[i]);
+
 			if (Std.is(parameters[i], It))
 			{
-				//trace("It: " + args[i]);
-				
 				var it = cast(parameters[i], It);
 				if (!it.matches(args[i])) 
 				{
-					//trace("Did not match.");
+					//trace("'It' did not match.");
 					return null;
 				}
 			}

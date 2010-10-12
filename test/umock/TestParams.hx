@@ -48,15 +48,18 @@ class TestParams
 	{
 		var mock = new Mock<IParamReturn>(IParamReturn);
 		
-		// Even though a IsAny is used, it should work with the more specific cases.
-		mock.setupMethod("gimme").withParams(It.IsNull()).returns("null");
+		mock.setupMethod("gimme").withParams(It.IsNull()).returns("NULL");
 		mock.setupMethod("gimme").withParams("123", It.IsNull()).returns("123");
 		
-		Assert.equals("null", mock.object.gimme(null));
+		Assert.equals("NULL", mock.object.gimme(null));
 		Assert.equals("123", mock.object.gimme("123", null));
 		
 		// A limitation in optional arguments makes this return 123.
-		// The prefered result would be null.
+		// The prefered result would be null. It works in javascript however, so be careful.
+		#if js
+		Assert.equals(null, mock.object.gimme("123"));
+		#else
 		Assert.equals("123", mock.object.gimme("123"));
+		#end
 	}
 }
