@@ -1,4 +1,4 @@
-<project name="umock" url="http://github.com/ciscoheat/umock" license="BSD">
+<project name="umock" url="http://github.com/ciscoheat/umock/wiki/Description-and-Quickstart" license="BSD">
     <user name="ciscoheat"/>
     <tag v="mock"/>
     <tag v="neko"/>
