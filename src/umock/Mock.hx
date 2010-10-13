@@ -412,7 +412,7 @@ private class MockSetupContext<T>
 	private var mock : Mock<T>;
 	private var fieldName : Dynamic;
 	private var isFunc : Bool;
-	private var callBacks : Array<Void -> Void>;
+	private var callBacks : Array<Array<Dynamic> -> Void>;
 	private var parameters : Array<Dynamic>;
 	private var isLazy : Bool;
 	private var isThrow : Bool;
@@ -423,7 +423,7 @@ private class MockSetupContext<T>
 		this.fieldName = fieldName;
 		this.isFunc = isFunc;
 		this.isLazy = false;
-		this.callBacks = new Array<Void -> Void>();
+		this.callBacks = new Array<Array<Dynamic> -> Void>();
 	}
 	
 	/**
@@ -473,7 +473,7 @@ private class MockSetupContext<T>
 			
 			var returnFunction = Reflect.makeVarArgs(function(args : Array<Dynamic>) {
 				p.addCallCount(fieldName);
-				for (f in calls) f();				
+				for (f in calls) f(args);
 				return p.returnValue(fieldName, args);
 			});		
 			
@@ -525,13 +525,13 @@ private class MockSetupContext<T>
 		return this;
 		*/
 	}
-	
+
 	/**
-	 * A callback method that is executed on field invocation.
+	 * A callback method that is executed on field invocation, with method parameters as argument.
 	 * @param	f A callback function
 	 * @return  The same context object for method chaining.
 	 */
-	public function callBack(f : Void -> Void) : MockSetupContext<T>
+	public function callBackArgs(f : Array<Dynamic> -> Void) : MockSetupContext<T>
 	{
 		if (!isFunc)
 			throw "callBack() isn't allowed on properties.";
@@ -541,7 +541,17 @@ private class MockSetupContext<T>
 			returns(null);
 		
 		callBacks.push(f);
-		return this;
+		return this;		
+	}
+
+	/**
+	 * A callback method that is executed on field invocation.
+	 * @param	f A callback function
+	 * @return  The same context object for method chaining.
+	 */
+	public function callBack(f : Void -> Void) : MockSetupContext<T>
+	{
+		return callBackArgs(function(args : Array<Dynamic>) { f(); } );
 	}
 }
 

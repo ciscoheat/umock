@@ -12,9 +12,17 @@ class TestCallback
 	{
 		
 	}
-	
-	public function setup()
+
+	public function testCallbackArgs()
 	{
+		var mock = new Mock<ITest>(ITest);
+		var date = Date;
+		var now = Date.now();
+
+		mock.setupMethod("setDate").callBackArgs(function(args : Array<Dynamic>) { date = cast args[0]; } );
+		
+		mock.object.setDate(now);
+		Assert.equals(now, date);
 	}
 	
 	public function testCallbackEmpty()

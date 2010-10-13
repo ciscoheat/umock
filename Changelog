@@ -1,5 +1,12 @@
 Changelog for umock
 
+v0.3 (2010-10-13)
+=================
+Features
+ - Added callBackArgs() for sending the method parameters to the callback:
+   mock.setupMethod("a").callBackArgs(function(args : Array<Dynamic) { ... });
+
+
 v0.21 (2010-10-13)
 ==================
 Features
@@ -8,6 +15,7 @@ Features
 Bug fixes
  - Default return values (no withParams() used) now works properly.
  - withParams() can now be used with throws().
+
 
 v0.2 (2010-10-12)
 =================
