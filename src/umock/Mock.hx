@@ -2,7 +2,9 @@ package umock;
 
 import haxe.rtti.Infos;
 import haxe.rtti.CType;
+
 import umock.rtti.RttiUtil;
+import umock.ParameterConstraint;
 
 #if withmacro
 import haxe.macro.Expr;
@@ -288,11 +290,21 @@ class Mock<T>
 			funcParameters.set(field, [params]);
 		else
 		{
-			funcParameters.get(field).push(params);
+			var parameters = funcParameters.get(field);
+
+			// There can only be one catch-all constraint.
+			if (params.parameters.length == 0)
+			{
+				for (p in parameters)
+					if (p.parameters.length == 0)
+						parameters.remove(p);
+			}
+			
+			parameters.push(params);
 			
 			// Sort the parameter arrays so the arrays with most parameters comes first.
 			// If equal parameters, sort the It.IsAny() parameters last.
-			funcParameters.get(field).sort(function(x : ParameterConstraint, y : ParameterConstraint) {
+			parameters.sort(function(x : ParameterConstraint, y : ParameterConstraint) {
 				var test = y.parameters.length - x.parameters.length;
 				return test == 0 ? sortIsAny(x, y) : test;
 			});
@@ -319,22 +331,7 @@ class Mock<T>
 		
 	private function returnValue(field : String, args : Array<Dynamic>) : Dynamic
 	{
-		// Because optional arguments are specified by null, two rules must be made to
-		// differ between cases, otherwise the constraints will mismatch.
-		var parameters : List<ParameterConstraint>;
-		var allParameters = funcParameters.get(field);
-		var argsLength = args.length;
-		
-		// If args are without null, get only the constraints that are exactly that length.
-		// If not, get all constraints up to that length.
-		if (Lambda.exists(args, function(arg : Dynamic) { return arg == null; } ))
-		{
-			parameters = Lambda.filter(allParameters, function(param : ParameterConstraint) { return param.parameters.length <= argsLength; } );
-		}
-		else
-		{
-			parameters = Lambda.filter(allParameters, function(param : ParameterConstraint) { return param.parameters.length == argsLength; } );
-		}
+		var parameters = validParameters(field, args);
 		
 		for (p in parameters)
 		{
@@ -342,7 +339,40 @@ class Mock<T>
 			if (output != null) return output;
 		}
 		
-		return null;
+		// If no match, use the catch-all (last parameter) if it exists.
+		var catchAll = catchAll(field);		
+		return catchAll != null ? catchAll.returnIfMatches(args) : null;
+	}
+		
+	/**
+	 * Get the catch-all parameter if it exists, which is the one without a withParams() call.
+	 * @param	field
+	 */
+	private function catchAll(field : String)
+	{
+		var params = funcParameters.get(field);
+		
+		var catchAll = params[params.length - 1];
+		return catchAll.parameters.length == 0 ? catchAll : null;
+	}
+	
+	private function validParameters(field : String, args : Array<Dynamic>) : List<ParameterConstraint>
+	{
+		// Because optional arguments are specified by null, two rules must be made to
+		// differ between cases, otherwise the constraints will mismatch.
+		var allParameters = funcParameters.get(field);		
+		var argsLength = args.length;
+		
+		// If args are without null, get only the constraints that are exactly that length.
+		// If not, get all constraints up to that length.
+		if (Lambda.exists(args, function(arg : Dynamic) { return arg == null; } ))
+		{
+			return Lambda.filter(allParameters, function(param : ParameterConstraint) { return param.parameters.length <= argsLength; } );
+		}
+		else
+		{
+			return Lambda.filter(allParameters, function(param : ParameterConstraint) { return param.parameters.length == argsLength; } );
+		}
 	}
 }
 
@@ -385,6 +415,7 @@ private class MockSetupContext<T>
 	private var callBacks : Array<Void -> Void>;
 	private var parameters : Array<Dynamic>;
 	private var isLazy : Bool;
+	private var isThrow : Bool;
 	
 	public function new(mock : Mock<T>, fieldName : String, isFunc : Bool)
 	{
@@ -393,21 +424,30 @@ private class MockSetupContext<T>
 		this.isFunc = isFunc;
 		this.isLazy = false;
 		this.callBacks = new Array<Void -> Void>();
-		
-		//trace("Context: " + fieldName + "(" + isFunc + ")");
 	}
 	
 	/**
 	 * Returns a value through a callback function.
 	 * @param	f callback function
-	 * @return	any value
+	 * @return	The same context object for method chaining.
 	 */
 	public function returnsLazy(f : Void -> Dynamic) : MockSetupContext<T>
 	{
 		isLazy = true;
 		return returns(f);
 	}
-	
+
+	/**
+	 * Throws a value through a callback function.
+	 * @param	f callback function
+	 * @return	The same context object for method chaining.
+	 */
+	public function throwsLazy(f : Void -> Dynamic) : MockSetupContext<T>
+	{
+		isLazy = true;
+		return throws(f);
+	}
+
 	/**
 	 * Specifies what value a mocked field should return
 	 * @param	value Return value.
@@ -415,20 +455,23 @@ private class MockSetupContext<T>
 	 */
 	public function returns(value : Dynamic) : MockSetupContext<T>
 	{
+		return createConstraint(ConstraintAction.returnAction(value));
+	}
+	
+	public function createConstraint(value : ConstraintAction) : MockSetupContext<T>
+	{
 		var fieldName = this.fieldName;
 		var calls = this.callBacks;
 		
 		if (isFunc)
 		{
-			// TODO: Move return values to separate structure.
-			//trace("Function: " + fieldName + " on " + mock.object + " should return " + value);
-			
+			var constraint = new ParameterConstraint(value, parameters, isLazy);
 			var p : MockFriend = mock;
+			p.addParams(fieldName, constraint);
 			
-			p.addParams(fieldName, new ParameterConstraint(value, parameters, isLazy));
+			//trace("Added constraint: " + constraint);
 			
 			var returnFunction = Reflect.makeVarArgs(function(args : Array<Dynamic>) {
-				//trace("addCallCount: " + fieldName);
 				p.addCallCount(fieldName);
 				for (f in calls) f();				
 				return p.returnValue(fieldName, args);
@@ -438,7 +481,19 @@ private class MockSetupContext<T>
 		}
 		else
 		{
-			Reflect.setField(mock.object, fieldName, value);
+			// Properties are simpler, just return the field.
+			var fieldValue : Dynamic;
+			
+			switch(value)
+			{
+				case returnAction(v):
+					fieldValue = v;
+					
+				case throwAction(v):
+					fieldValue = v;
+			}
+			
+			Reflect.setField(mock.object, fieldName, fieldValue);
 		}
 			
 		return this;
@@ -447,16 +502,28 @@ private class MockSetupContext<T>
 	/**
 	 * Specifies that a field should throw an exception.
 	 * @param	value Exception to throw.
+	 * @return  The same context object for method chaining.
 	 */
 	public function throws(value : Dynamic) : MockSetupContext<T>
 	{
 		if (!isFunc)
 			throw "throws() isn't allowed on properties.";
+			
+		return createConstraint(ConstraintAction.throwAction(value));
 
-		var thrower = Reflect.makeVarArgs(function(args : Array<Dynamic>) { throw value; } );
+		/*
+		var p : MockFriend = mock;
+		var field = this.fieldName;
 		
-		Reflect.setField(mock.object, fieldName, thrower);
+		p.addParams(field, new ParameterConstraint(value, parameters, isLazy));
+
+		var thrower = Reflect.makeVarArgs(function(args : Array<Dynamic>) { 
+			return p.parameterThrow(field, args) ? throw value : null;
+		});
+		
+		Reflect.setField(mock.object, field, thrower);
 		return this;
+		*/
 	}
 	
 	/**

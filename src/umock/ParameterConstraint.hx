@@ -7,22 +7,35 @@ import umock.Mock;
  * @author Andreas Soderlund
  */
 
+enum ConstraintAction
+{
+	returnAction(v : Dynamic);
+	throwAction(v : Dynamic);
+}
+
 class ParameterConstraint 
 {
 	public var parameters(default, null) : Array<Dynamic>;
-	public var returns(default, null) : Dynamic;
+	public var action(default, null) : ConstraintAction;
 	public var isLazy(default, null) : Bool;
 	
-	public function new(returns : Dynamic, parameters : Array<Dynamic>, isLazy : Bool)
+	public function new(action : ConstraintAction, parameters : Array<Dynamic>, isLazy : Bool)
 	{
 		this.parameters = parameters == null ? [] : parameters;
-		this.returns = returns;
+		this.action = action;
 		this.isLazy = isLazy == true ? true : false;
 	}
 	
 	private function returnValue() : Dynamic
 	{
-		return (isLazy && Reflect.isFunction(returns)) ? returns() : returns;
+		switch(action)
+		{
+			case returnAction(v):
+				return isLazy ? v() : v;
+				
+			case throwAction(v):
+				throw isLazy ? v() : v;
+		}		
 	}
 	
 	public function returnIfMatches(args : Array<Dynamic>) : Dynamic
@@ -61,7 +74,7 @@ class ParameterConstraint
 		}
 
 		var output = returnValue();
-		//trace("Returning: " + output);		
+		//trace("Returning: " + output);
 		return output;
 	}	
 }

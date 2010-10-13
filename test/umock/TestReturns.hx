@@ -14,10 +14,6 @@ class TestReturns
 		
 	}
 	
-	public function setup()
-	{
-	}
-	
 	public function testEmptyObject()
 	{
 		var mock = new Mock<ITest>(ITest);
@@ -66,7 +62,7 @@ class TestReturns
 		// an interface or a real object. So normal methods should be
 		// callable.
 		Assert.equals("123", mock.object.normalMethod(123));
-	}	
+	}
 	
 	public function testObjectReturns()
 	{
@@ -207,5 +203,31 @@ class TestReturns
 		Assert.equals(20, i);
 		Assert.equals(21, mock.object.message());
 		Assert.equals(21, i);
+	}
+	
+	public function testLazyThrow()
+	{
+		var i = 20;
+		var mock = new Mock<MockMe>(MockMe);
+		
+		mock.setupMethod("message").throwsLazy(function() { return ++i; } );
+		
+		Assert.raises(function() { mock.object.message(); }, Int);
+		Assert.equals(21, i);
+	}
+	
+	public function testDefaultReturnValue()
+	{
+		var mock = new Mock<IParamReturn>(IParamReturn);
+		
+		mock.setupMethod("gimme").withParams("AAA", 4711).returns("67890");
+
+		Assert.isNull(mock.object.gimme("WhatYouGot", 1337));
+
+		// Set a default value (no withParams). From now on it should be returned 
+		// when there is no match for the parameter constraints.
+		mock.setupMethod("gimme").returns("12345");
+
+		Assert.equals("12345", mock.object.gimme("WhatYouGot", 1337));
 	}
 }

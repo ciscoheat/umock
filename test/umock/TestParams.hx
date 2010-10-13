@@ -62,4 +62,17 @@ class TestParams
 		Assert.equals("123", mock.object.gimme("123"));
 		#end
 	}
+	
+	public function testThrowsConstraints()
+	{
+		var mock = new Mock<IParamReturn>(IParamReturn);
+		
+		mock.setupMethod("gimme").withParams("123").throws("123 is illegal.");
+		mock.setupMethod("gimme").withParams("789").returns("789");
+		
+		Assert.isNull(mock.object.gimme("456"));
+		Assert.equals("789", mock.object.gimme("789"));
+		
+		Assert.raises(function() { mock.object.gimme("123"); }, String);
+	}
 }

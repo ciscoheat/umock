@@ -1,0 +1,18 @@
+Changelog for umock
+
+v0.21 (2010-10-13)
+==================
+Features
+ - Added throwsLazy()
+
+Bug fixes
+ - Default return values (no withParams() used) now works properly.
+ - withParams() can now be used with throws().
+
+v0.2 (2010-10-12)
+=================
+Features
+ - Added parameter constraints, so a mock object can now be setup like:
+   mock.setupMethod("a").withParams("abc", It.IsAny(Int)).returns("xyz");
+ - Also added lazy returns, so a mock object can now be setup like:
+   mock.setupMethod("a").returnsLazy(function() { return someValue; });
