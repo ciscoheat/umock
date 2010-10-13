@@ -7,6 +7,6 @@
     <description>A mocking framework for haXe, inspired by Moq.</description>
     <version name="0.3">
     Added callBackArgs() for sending the method parameters to the callback:
-    mock.setupMethod("a").callBackArgs(function(args : Array<Dynamic) { ... });
+    mock.setupMethod("a").callBackArgs(function(args : Array&lt;Dynamic&gt;) { ... });
     </version>
 </project>
