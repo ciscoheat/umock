@@ -39,7 +39,12 @@ class The
 				// To notify Mock.setup() that this is a method call,
 				// return an anonymous method that returns the fieldname as a string.
 				var cPos = Context.currentPos();
-				return { expr: EFunction( {expr: { expr: EReturn( { expr: EConst(CString(f)), pos : cPos } ), pos : cPos }, args: [], ret: null } ), pos: cPos };
+				var fn: Function = { 
+					args: [], ret: TPath({ pack : [], name : "String", params : [], sub : null }), params: [], 
+					expr: {expr: EReturn({expr: EConst(CString(f)), pos: cPos}), pos: cPos}
+				};
+
+				return return { expr: EFunction(null, fn), pos: cPos };
 				
 			default:
 				// If no match, return itself to get intellisense.
