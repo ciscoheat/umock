@@ -147,4 +147,51 @@ class TestVerify
 		Assert.raises(function() { mock.verify("setDate", Times.never()); }, MockException);
 		Assert.raises(function() { mock.verify("setDate", Times.once()); }, MockException);		
 	}
+	
+	public function testVerifyAll()
+	{
+		var mock = new Mock<MockMe>(MockMe);
+		
+		mock.setupMethod("messageNever")
+			.returns("never called mock method...")
+			.repeat.never();
+
+		mock.setupMethod("messageOnce")
+			.returns("once called mock method...")
+			.repeat.once();
+
+		mock.setupMethod("messageTwice")
+			.returns("twice called mock method...")
+			.repeat.exactly(2);
+
+		Assert.equals("once called mock method...", mock.object.messageOnce());
+		Assert.equals("twice called mock method...", mock.object.messageTwice());
+		Assert.equals("twice called mock method...", mock.object.messageTwice());
+		
+		mock.verifyAll();
+	}
+	
+	public function testVerifyAllWithIncorrectRepeating()
+	{
+		var mock = new Mock<MockMe>(MockMe);
+		
+		mock.setupMethod("messageNever")
+			.returns("should not never called mock method...")
+			.repeat.never();
+
+		mock.setupMethod("messageOnce")
+			.returns("once called mock method...")
+			.repeat.once();
+
+		mock.setupMethod("messageTwice")
+			.returns("twice called mock method...")
+			.repeat.atLeast(2);
+
+		Assert.equals("should not never called mock method...", mock.object.messageNever()); // <-- incorrect !
+		Assert.equals("once called mock method...", mock.object.messageOnce());
+		Assert.equals("twice called mock method...", mock.object.messageTwice());
+		Assert.equals("twice called mock method...", mock.object.messageTwice());
+		
+		Assert.raises(function() { mock.verifyAll(); }, MockException);
+	}
 }
