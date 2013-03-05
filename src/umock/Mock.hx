@@ -168,6 +168,12 @@ class Mock<T>
 	{
 		return cast mockObject;
 	}
+	
+	private var contexts: Hash<MockSetupContext<T>>;
+
+	public static function create(type : Class<Dynamic>) {
+		return new Mock(type);
+	}
 
 	/**
 	 * Instantiates a new mock object
@@ -212,6 +218,7 @@ class Mock<T>
 				
 		funcCalls = new Hash<Int>();
 		funcParameters = new Hash<Array<ParameterConstraint>>();
+		contexts = new Hash<MockSetupContext<T>>();
 	}
 
 	/**
@@ -235,7 +242,10 @@ class Mock<T>
 		else
 			throw "Only 'String' or 'Void -> String' are allowed arguments for setup()";
 					
-		return new MockSetupParamContext<T>(this, fieldName, isFunc);
+		var ctx = new MockSetupParamContext<T>(this, fieldName, isFunc);
+		contexts.set(fieldName, ctx);
+		
+		return ctx;
 	}
 	
 	public function setupField(fieldName : String)
@@ -247,7 +257,24 @@ class Mock<T>
 	{
 		return setup(function() { return methodName; });
 	}
-
+    
+    /**
+     * Verifies all expections.
+     */
+	public function verifyAll() {
+	    if (! this.contexts.iterator().hasNext()) {
+	        throw new MockException("Expection is not set up.");
+	    }
+	    
+	    for (fieldName in this.contexts.keys()) {
+            var count = funcCalls.exists(fieldName) ? funcCalls.get(fieldName) : 0;
+            var ctx = this.contexts.get(fieldName);
+            
+            if (!ctx.repeat.isValid(count)) {
+                throw new MockException("Mock verification failed: Expected " + ctx.repeat.toString() + " to function " + fieldName + ", but was " + count + " call"  + (count == 1 ? "" : "s") + ".");
+            }
+        }
+	}
 	
 	/**
 	 * Verifies that a method has been called a specific number of times.
@@ -401,6 +428,58 @@ private class MockSetupParamContext<T> extends MockSetupContext<T>
 	}
 }
 
+private class Repeat<T> {
+    private var context: MockSetupContext<T>;
+    private var times: Times; 
+    
+    public function new (context: MockSetupContext<T>) {
+        this.context = context;
+    }
+    
+    private function setRepeatConstraint(times: Times) {
+        this.times = times;
+        
+        return this.context;
+    }
+    
+    public function once() { 
+        return this.setRepeatConstraint(Times.once()); 
+    }
+    public function never() { 
+        return this.setRepeatConstraint(Times.never()); 
+    }
+    public function atLeastOnce() { 
+        return this.setRepeatConstraint(Times.atLeastOnce()); 
+    }
+    public function atMostOnce() { 
+        return this.setRepeatConstraint(Times.atMostOnce()); 
+    }
+    public function atLeast(calls : Int) { 
+        return this.setRepeatConstraint(Times.atLeast(calls)); 
+    }
+    public function atMost(calls : Int) { 
+        return this.setRepeatConstraint(Times.atMost(calls)); 
+    }
+    public function exactly(calls : Int) { 
+        return this.setRepeatConstraint(Times.exactly(calls)); 
+    }
+    
+    public inline function isValid(calls: Int): Bool {
+        return this.timesOrDefault().isValid(calls);
+    }
+    
+    private inline function timesOrDefault(): Times {
+    	if (this.times == null) {
+        	this.atLeastOnce();
+        } 
+    	return this.times;
+    }
+    
+    public inline function toString() {
+        return this.timesOrDefault().toString();
+    }
+}
+
 private typedef MockFriend = {
 	private function addCallCount(field : String) : Void;
 	private function addParams(field : String, params : ParameterConstraint) : Void;
@@ -417,6 +496,8 @@ private class MockSetupContext<T>
 	private var isLazy : Bool;
 	private var isThrow : Bool;
 	
+	public var repeat(default, null): Repeat<T>;
+	
 	public function new(mock : Mock<T>, fieldName : String, isFunc : Bool)
 	{
 		this.mock = mock;
@@ -424,6 +505,7 @@ private class MockSetupContext<T>
 		this.isFunc = isFunc;
 		this.isLazy = false;
 		this.callBacks = new Array<Array<Dynamic> -> Void>();
+		this.repeat = new Repeat(this);
 	}
 	
 	/**
