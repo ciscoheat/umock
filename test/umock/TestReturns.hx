@@ -1,6 +1,8 @@
 package umock;
 
 import haxe.rtti.Infos;
+import haxe.PosInfos;
+
 import utest.Assert;
 
 import umock.Mock;
@@ -30,8 +32,8 @@ class TestReturns
 		Assert.raises(function() { mock.object.length(); }, String);
 		Assert.raises(function() { mock.object.setDate(Date.now()); }, String);
 		#else
-		Assert.isNull(mock.object.length);
-		Assert.isNull(mock.object.setDate);
+		Assert.notNull(mock.object.length);
+		Assert.notNull(mock.object.setDate);
 		#end
 	}
 
