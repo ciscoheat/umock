@@ -63,6 +63,9 @@ class MockMe
 	{
 		return "message was called";
 	}
+	public function messageNever() { return "never called ..."; }
+	public function messageOnce() { return "once called ..."; }
+	public function messageTwice() { return "twice called ..."; }
 }
 
 class ClassImplementsInfos implements Infos
